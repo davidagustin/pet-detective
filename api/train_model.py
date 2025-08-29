@@ -76,7 +76,8 @@ def train_pet_classifier(data_dir: str, model_save_path: str = "models/pet_model
                         batch_size: int = 32, epochs: int = 10, learning_rate: float = 0.001,
                         log_interval: int = 10, model_type: str = "resnet",
                         scheduler_type: str = "cosine", weight_decay: float = 1e-4,
-                        dropout_rate: float = 0.5, early_stopping_patience: int = 10):
+                        dropout_rate: float = 0.5, early_stopping_patience: int = 10,
+                        existing_model_path: str = None):
     """
     Train the pet classifier on Oxford-IIIT Pet dataset with detailed logging
     
@@ -155,7 +156,14 @@ def train_pet_classifier(data_dir: str, model_save_path: str = "models/pet_model
     
     # Initialize classifier
     print("\n🤖 Initializing model...")
-    classifier = PetClassifier(num_classes=37, model_type=model_type)
+    if existing_model_path and os.path.exists(existing_model_path):
+        print(f"   - Loading existing model from: {existing_model_path}")
+        classifier = PetClassifier(num_classes=37, model_type=model_type, model_path=existing_model_path)
+        print(f"   - ✅ Existing model loaded successfully!")
+    else:
+        print(f"   - Creating new model from scratch")
+        classifier = PetClassifier(num_classes=37, model_type=model_type)
+    
     print(f"   - Model architecture: {model_type.upper()} with transfer learning")
     print(f"   - Number of classes: {classifier.num_classes}")
     print(f"   - Device: {classifier.device}")
@@ -529,6 +537,8 @@ def main():
                        help='Path to Oxford-IIIT Pet dataset')
     parser.add_argument('--model_path', type=str, default='pet_model.pth',
                        help='Path to save the trained model')
+    parser.add_argument('--existing_model', type=str, default=None,
+                       help='Path to existing model to continue training from')
     parser.add_argument('--batch_size', type=int, default=32,
                        help='Batch size for training')
     parser.add_argument('--epochs', type=int, default=10,
@@ -590,7 +600,8 @@ def main():
             epochs=args.epochs,
             learning_rate=args.lr,
             log_interval=args.log_interval,
-            model_type=args.model_type
+            model_type=args.model_type,
+            existing_model_path=args.existing_model
         )
 
 if __name__ == "__main__":

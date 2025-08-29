@@ -116,11 +116,21 @@ class DatabaseGameManager:
                      'russian_blue', 'abyssinian', 'ragdoll', 'sphynx', 'birman', 'bombay', 'egyptian_mau']
         animal_type = 'cat' if any(cat_breed in breed_lower for cat_breed in cat_breeds) else 'dog'
         
+        # Use Cloudinary URL if available, fallback to local
+        try:
+            from cloudinary_helper import cloudinary_helper
+            if cloudinary_helper.is_available():
+                blob_url = cloudinary_helper.get_image_url(selected_filename)
+            else:
+                blob_url = f'http://localhost:5328/api/images/{selected_filename}'
+        except ImportError:
+            blob_url = f'http://localhost:5328/api/images/{selected_filename}'
+        
         return {
             'id': f'local_{selected_filename}',
             'filename': selected_filename,
             'breed': breed,
-            'blob_url': f'http://localhost:5328/api/images/{selected_filename}',  # Full URL to API server
+            'blob_url': blob_url,
             'animal_type': animal_type
         }
     

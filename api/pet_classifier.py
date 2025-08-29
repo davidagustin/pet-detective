@@ -334,8 +334,17 @@ class PetClassifier:
                         # Standardize breed name
                         standardized_breed = filename_to_breed.get(breed_filename.lower(), breed_filename.replace('_', ' ').title())
                         
-                        # Construct server-side URL with full path
-                        image_path = f'http://localhost:5328/api/images/{filename}'
+                        # Use Cloudinary URL instead of local serving
+                        try:
+                            from cloudinary_helper import cloudinary_helper
+                            if cloudinary_helper.is_available():
+                                image_path = cloudinary_helper.get_image_url(filename)
+                            else:
+                                # Fallback to local serving
+                                image_path = f'http://localhost:5328/api/images/{filename}'
+                        except ImportError:
+                            # Fallback if cloudinary_helper not available
+                            image_path = f'http://localhost:5328/api/images/{filename}'
                         
                         if standardized_breed not in available_images:
                             available_images[standardized_breed] = []

@@ -3,8 +3,16 @@ const nextConfig = {
   // Configure image domains based on environment
   images: {
     domains: process.env.NODE_ENV === 'development' 
-      ? ['localhost', '127.0.0.1'] 
-      : (process.env.NEXT_PUBLIC_IMAGE_DOMAINS || '').split(',').filter(Boolean),
+      ? ['localhost', '127.0.0.1', 'res.cloudinary.com'] 
+      : ['res.cloudinary.com', ...(process.env.NEXT_PUBLIC_IMAGE_DOMAINS || '').split(',').filter(Boolean)],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'res.cloudinary.com',
+        port: '',
+        pathname: '/drj3twq19/image/upload/**',
+      }
+    ]
   },
   // Optimize build performance
   swcMinify: true,

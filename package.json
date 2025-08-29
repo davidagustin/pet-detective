@@ -11,7 +11,10 @@
     "start": "next start",
     "lint": "next lint",
     "clean": "rm -rf .next out dist",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "delete-blobs": "npx ts-node scripts/delete-all-blobs.ts",
+    "delete-blobs:dry-run": "npx ts-node scripts/delete-all-blobs.ts --dry-run",
+    "delete-blobs:confirm": "npx ts-node scripts/delete-all-blobs.ts --confirm"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.56.0",
@@ -20,6 +23,7 @@
     "@types/react-dom": "^18.2.18",
     "@vercel/blob": "^1.1.1",
     "autoprefixer": "^10.4.16",
+    "cloudinary": "^2.7.0",
     "next": "^14.0.4",
     "postcss": "^8.4.32",
     "react": "^18.2.0",

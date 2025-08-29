@@ -106,6 +106,14 @@ Pet Detective is a comprehensive AI-powered platform that combines deep learning
 - **Log File Exclusion**: Log files are now properly excluded from version control
 - **Environment Variable Documentation**: Clear documentation for all required and optional environment variables
 
+### ☁️ Cloudinary Integration
+- **External Image Hosting**: All 7GB+ of pet images migrated to Cloudinary CDN for faster global delivery
+- **Automatic Optimization**: Images served with automatic format and quality optimization
+- **Responsive Images**: Dynamic resizing and transformations based on device requirements
+- **Enhanced Performance**: Reduced deployment size and dramatically improved build times
+- **Image Transformations**: Built-in support for effects, filters, and on-the-fly image processing
+- **Smart Fallbacks**: Graceful degradation with local image fallbacks when needed
+
 ---
 
 ## 🎮 Features
@@ -184,6 +192,16 @@ Pet Detective is a comprehensive AI-powered platform that combines deep learning
    POSTGRES_HOST=your_postgres_host_here
    POSTGRES_PASSWORD=your_postgres_password_here
    POSTGRES_DATABASE=your_postgres_database_here
+   
+   # Cloudinary Configuration (for image hosting)
+   CLOUDINARY_CLOUD_NAME=your_cloud_name_here
+   CLOUDINARY_API_KEY=your_api_key_here
+   CLOUDINARY_API_SECRET=your_api_secret_here
+   NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=your_cloud_name_here
+   
+   # Additional Configuration (optional)
+   CORS_ORIGINS=http://localhost:3000,https://yourdomain.com
+   NEXT_PUBLIC_IMAGE_DOMAINS=res.cloudinary.com,yourdomain.com
    ```
 
 4. **Configure Google OAuth (Optional)**

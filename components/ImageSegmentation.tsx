@@ -47,7 +47,7 @@ export default function ImageSegmentation() {
       const formData = new FormData()
       formData.append('image', selectedFile)
 
-      const response = await fetch('/api/segment', {
+      const response = await fetch('http://localhost:5328/api/segment', {
         method: 'POST',
         body: formData,
       })

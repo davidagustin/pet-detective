@@ -1,7 +1,22 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { supabase, LeaderboardEntry } from '@/lib/supabase'
+import { createClient } from '@supabase/supabase-js'
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co',
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key'
+)
+
+interface LeaderboardEntry {
+  id: string
+  user_id: string
+  username: string
+  score: number
+  total_questions: number
+  accuracy: number
+  created_at: string
+}
 
 export default function Leaderboard() {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])

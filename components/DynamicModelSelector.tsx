@@ -40,7 +40,7 @@ export default function DynamicModelSelector({ selectedModel, onModelSelect }: D
 
   const fetchAvailableModels = async () => {
     try {
-      const response = await fetch('/api/models/available')
+      const response = await fetch('http://localhost:5328/api/models/available')
       const data = await response.json()
       
       if (response.ok) {

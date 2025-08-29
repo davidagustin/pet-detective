@@ -49,7 +49,7 @@ export default function EnhancedPetGame({ selectedModel, selectedModelName, user
     setIsTimerActive(false)
 
     try {
-      const response = await fetch('/api/game/start', {
+      const response = await fetch('http://localhost:5328/api/game/start', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -87,7 +87,7 @@ export default function EnhancedPetGame({ selectedModel, selectedModelName, user
     setIsLoading(true)
 
     try {
-      const response = await fetch('/api/game/check', {
+      const response = await fetch('http://localhost:5328/api/game/check', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

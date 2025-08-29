@@ -174,7 +174,7 @@ class PetSegmentation:
         segmented_image = Image.fromarray(segmented_array.astype(np.uint8))
         
         # Calculate confidence (percentage of pixels classified as pet)
-        confidence = mask_np.mean()
+        confidence = float(mask_np.mean())
         
         processing_time = time.time() - start_time
         
@@ -199,8 +199,8 @@ class PetSegmentation:
         return {
             'maskImage': self.encode_image_to_base64(result['mask']),
             'segmentedImage': self.encode_image_to_base64(result['segmented']),
-            'confidence': result['confidence'],
-            'processingTime': result['processing_time']
+            'confidence': float(result['confidence']),  # Convert numpy float32 to Python float
+            'processingTime': float(result['processing_time'])  # Ensure it's a Python float
         }
 
 # Initialize global segmentation model

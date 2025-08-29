@@ -58,7 +58,7 @@ export default function Home() {
         formData.append('model_name', selectedModelName)
       }
 
-      const response = await fetch('/api/predict', {
+      const response = await fetch('http://localhost:5328/api/predict', {
         method: 'POST',
         body: formData,
       })
@@ -95,7 +95,7 @@ export default function Home() {
     }
 
     try {
-      const response = await fetch('/api/train', {
+      const response = await fetch('http://localhost:5328/api/train', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -152,9 +152,15 @@ export default function Home() {
                     {showLeaderboard ? 'Hide' : 'Show'} Leaderboard
                   </button>
                   <button
-                    onClick={() => supabase.auth.signOut()}
-                    className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                    onClick={async () => {
+                      await supabase.auth.signOut()
+                      setUser(null)
+                    }}
+                    className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center"
                   >
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
                     Sign Out
                   </button>
                 </>

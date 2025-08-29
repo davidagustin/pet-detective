@@ -4,6 +4,7 @@
 /node_modules
 /.pnp
 .pnp.js
+.yarn/install-state.gz
 
 # testing
 /coverage
@@ -26,6 +27,7 @@ yarn-error.log*
 
 # local env files
 .env*.local
+.env
 
 # vercel
 .vercel
@@ -33,4 +35,60 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-__pycache__
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environment
+venv/
+env/
+ENV/
+
+# Model files
+*.pth
+*.pt
+*.pkl
+
+# Temporary files
+temp_image.jpg
+*.tmp
+
+# Supabase and Database credentials
+POSTGRES_URL
+POSTGRES_USER
+POSTGRES_HOST
+SUPABASE_JWT_SECRET
+NEXT_PUBLIC_SUPABASE_ANON_KEY
+POSTGRES_PRISMA_URL
+POSTGRES_PASSWORD
+POSTGRES_DATABASE
+SUPABASE_URL
+NEXT_PUBLIC_SUPABASE_URL
+SUPABASE_SERVICE_ROLE_KEY
+POSTGRES_URL_NON_POOLING
+
+# Environment variables
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local

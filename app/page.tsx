@@ -1,116 +1,368 @@
-import Image from 'next/image'
-import Link from 'next/link'
+'use client'
+
+import { useState, useEffect, useRef } from 'react'
+import { createClient } from '@supabase/supabase-js'
+import Auth from '../components/Auth'
+import Leaderboard from '../components/Leaderboard'
+import DynamicModelSelector from '../components/DynamicModelSelector'
+import EnhancedPetGame from '../components/EnhancedPetGame'
+import ImageSegmentation from '../components/ImageSegmentation'
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co',
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key'
+)
 
 export default function Home() {
+  const [user, setUser] = useState<any>(null)
+  const [showAuth, setShowAuth] = useState(false)
+  const [showLeaderboard, setShowLeaderboard] = useState(false)
+  const [selectedModel, setSelectedModel] = useState('resnet')
+  const [selectedModelName, setSelectedModelName] = useState<string | null>(null)
+  const [showDynamicModelSelector, setShowDynamicModelSelector] = useState(false)
+  const [showSegmentation, setShowSegmentation] = useState(false)
+  const [predictions, setPredictions] = useState<{ [key: string]: number } | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const [score, setScore] = useState(0)
+  const [totalQuestions, setTotalQuestions] = useState(0)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    // Check for existing session
+    const getSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      setUser(session?.user ?? null)
+    }
+    getSession()
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null)
+    })
+
+    return () => subscription.unsubscribe()
+  }, [])
+
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    setIsLoading(true)
+    setPredictions(null)
+
+    try {
+      const formData = new FormData()
+      formData.append('image', file)
+      formData.append('model_type', selectedModel)
+      if (selectedModelName) {
+        formData.append('model_name', selectedModelName)
+      }
+
+      const response = await fetch('/api/predict', {
+        method: 'POST',
+        body: formData,
+      })
+
+      const data = await response.json()
+      if (response.ok) {
+        setPredictions(data)
+      } else {
+        console.error('Prediction failed:', data.error)
+        alert('Failed to analyze image: ' + data.error)
+      }
+    } catch (error) {
+      console.error('Error uploading image:', error)
+      alert('Failed to upload image')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleScoreUpdate = (newScore: number, newTotal: number) => {
+    setScore(newScore)
+    setTotalQuestions(newTotal)
+  }
+
+  const handleDynamicModelSelect = (modelName: string, modelType: string) => {
+    setSelectedModelName(modelName)
+    setSelectedModel(modelType)
+  }
+
+  const trainModel = async () => {
+    if (!user) {
+      alert('Please sign in to train models')
+      return
+    }
+
+    try {
+      const response = await fetch('/api/train', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          epochs: 5,
+          batch_size: 32,
+          learning_rate: 0.001,
+          model_type: selectedModel,
+          scheduler_type: 'cosine',
+          weight_decay: 1e-4,
+          dropout_rate: 0.5,
+          early_stopping_patience: 5,
+          enable_tuning: false,
+          tuning_method: 'optuna',
+          n_trials: 10
+        }),
+      })
+
+      const data = await response.json()
+      if (response.ok) {
+        console.log('Training started:', data)
+        alert('Model training started! Check the models directory for the trained model.')
+      } else {
+        console.error('Training failed:', data.error)
+        alert('Failed to start training: ' + data.error)
+      }
+    } catch (error) {
+      console.error('Error starting training:', error)
+      alert('Failed to start training')
+    }
+  }
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <Link href="/api/python">
-            <code className="font-mono font-bold">api/index.py</code>
-          </Link>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:h-auto lg:w-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{' '}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <header className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center">
+              <h1 className="text-2xl font-bold text-gray-900">🐕 Pet Detective</h1>
+            </div>
+            
+            <div className="flex items-center space-x-4">
+              {user ? (
+                <>
+                  <span className="text-sm text-gray-600">
+                    Welcome, {user.user_metadata?.username || user.email?.split('@')[0]}!
+                  </span>
+                  <button
+                    onClick={() => setShowLeaderboard(!showLeaderboard)}
+                    className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                  >
+                    {showLeaderboard ? 'Hide' : 'Show'} Leaderboard
+                  </button>
+                  <button
+                    onClick={() => supabase.auth.signOut()}
+                    className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                  >
+                    Sign Out
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={() => setShowAuth(true)}
+                  className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                >
+                  Sign In
+                </button>
+              )}
+            </div>
+          </div>
         </div>
-      </div>
+      </header>
 
-      <div className="relative flex place-items-center before:absolute before:h-[300px] before:w-[480px] before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-[240px] after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700 before:dark:opacity-10 after:dark:from-sky-900 after:dark:via-[#0141ff] after:dark:opacity-40 before:lg:h-[360px]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
+      {/* Auth Modal */}
+      {showAuth && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <Auth onAuthSuccess={() => setShowAuth(false)} onClose={() => setShowAuth(false)} />
+          </div>
+        </div>
+      )}
 
-      <div className="mb-32 grid text-center lg:mb-0 lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Docs{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
+      {/* Leaderboard Modal */}
+      {showLeaderboard && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-2xl font-semibold text-gray-800">🏆 Leaderboard</h2>
+              <button
+                onClick={() => setShowLeaderboard(false)}
+                className="text-gray-500 hover:text-gray-700 text-2xl"
+              >
+                ×
+              </button>
+            </div>
+            <Leaderboard />
+          </div>
+        </div>
+      )}
 
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800 hover:dark:bg-opacity-30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Learn{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Navigation Tabs */}
+        <div className="mb-8">
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => {
+                setShowSegmentation(false)
+                setShowDynamicModelSelector(false)
+              }}
+              className="px-4 py-2 rounded-lg bg-blue-500 text-white font-medium transition-colors"
+            >
+              🎮 Game & Predictions
+            </button>
+            <button
+              onClick={() => {
+                setShowSegmentation(false)
+                setShowDynamicModelSelector(true)
+              }}
+              className="px-4 py-2 rounded-lg bg-gray-200 text-gray-700 font-medium hover:bg-gray-300 transition-colors"
+            >
+              🤖 Model Selection
+            </button>
+            <button
+              onClick={() => {
+                setShowSegmentation(true)
+                setShowDynamicModelSelector(false)
+              }}
+              className="px-4 py-2 rounded-lg bg-gray-200 text-gray-700 font-medium hover:bg-gray-300 transition-colors"
+            >
+              🔍 Image Segmentation
+            </button>
+          </div>
+        </div>
 
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Templates{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Explore the Next.js 13 playground.
-          </p>
-        </a>
+        {/* Model Selection Section */}
+        {showDynamicModelSelector && (
+          <div className="mb-8">
+            <DynamicModelSelector
+              selectedModel={selectedModelName || selectedModel}
+              onModelSelect={handleDynamicModelSelect}
+            />
+          </div>
+        )}
 
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Deploy{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
+        {/* Main Content Grid */}
+        {!showSegmentation ? (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
+            {/* Image Upload Section */}
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h2 className="text-2xl font-semibold text-gray-800 mb-4">🔍 Upload Pet Image</h2>
+              <div className="space-y-4">
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileChange}
+                    accept="image/*"
+                    className="hidden"
+                  />
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
+                  >
+                    Choose Image
+                  </button>
+                  <p className="text-gray-500 mt-2">Upload a pet image to get breed predictions</p>
+                </div>
+
+                {isLoading && (
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+                    <p className="text-gray-600 mt-2">Analyzing image...</p>
+                  </div>
+                )}
+
+                {predictions && (
+                  <div className="space-y-2">
+                    <h3 className="font-semibold text-gray-800">Predictions:</h3>
+                    {Object.entries(predictions)
+                      .sort(([, a], [, b]) => b - a)
+                      .slice(0, 5)
+                      .map(([breed, probability]) => (
+                        <div key={breed} className="flex justify-between items-center bg-gray-50 p-2 rounded">
+                          <span className="font-medium">{breed}</span>
+                          <span className="text-blue-600 font-semibold">
+                            {(probability * 100).toFixed(1)}%
+                          </span>
+                        </div>
+                      ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Enhanced Game Section */}
+            <div>
+              <EnhancedPetGame
+                selectedModel={selectedModel}
+                selectedModelName={selectedModelName}
+                user={user}
+                onScoreUpdate={handleScoreUpdate}
+              />
+            </div>
+          </div>
+        ) : (
+          /* Segmentation Section */
+          <div>
+            <ImageSegmentation />
+          </div>
+        )}
+
+        {/* Model Training Section */}
+        {user && !showSegmentation && (
+          <div className="mt-8 bg-white rounded-lg shadow-md p-6">
+            <h2 className="text-2xl font-semibold text-gray-800 mb-4">🤖 Train New Model</h2>
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Model Type: {selectedModel.toUpperCase()}
+                  </label>
+                  <p className="text-sm text-gray-600">
+                    Selected Model: {selectedModelName || 'Default'}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <button
+                    onClick={trainModel}
+                    className="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
+                  >
+                    Train Model
+                  </button>
+                </div>
+              </div>
+              <p className="text-sm text-gray-600">
+                Training will create a new model in the models directory. This may take several minutes.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Game Stats */}
+        {!showSegmentation && (
+          <div className="mt-8 bg-white rounded-lg shadow-md p-6">
+            <h2 className="text-2xl font-semibold text-gray-800 mb-4">📊 Game Statistics</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="text-center">
+                <div className="text-3xl font-bold text-blue-600">{score}</div>
+                <div className="text-sm text-gray-600">Total Score</div>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl font-bold text-green-600">{totalQuestions}</div>
+                <div className="text-sm text-gray-600">Questions Answered</div>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl font-bold text-purple-600">
+                  {totalQuestions > 0 ? Math.round((score / totalQuestions) * 100) : 0}%
+                </div>
+                <div className="text-sm text-gray-600">Accuracy</div>
+              </div>
+            </div>
+          </div>
+        )}
+      </main>
+    </div>
   )
 }

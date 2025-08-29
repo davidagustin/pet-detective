@@ -1,14 +1,11 @@
-from flask import Flask, request, jsonify, send_from_directory, Response
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import os
 import json
 import threading
 import time
-from datetime import datetime, timedelta
+from datetime import datetime
 from werkzeug.utils import secure_filename
-import base64
-from io import BytesIO
-from PIL import Image
 import hashlib
 
 from pet_classifier import PetClassifier
@@ -19,6 +16,15 @@ from model_metadata import get_all_models, get_model_metadata, get_model_stats, 
 
 app = Flask(__name__)
 CORS(app)
+
+@app.route('/api/health', methods=['GET'])
+def health_check():
+    """Health check endpoint"""
+    return jsonify({
+        'status': 'healthy',
+        'message': 'Pet Detective API is running',
+        'timestamp': datetime.now().isoformat()
+    })
 
 # Initialize model manager
 model_manager = ModelManager()
@@ -118,12 +124,17 @@ def predict():
         file.save(temp_path)
         
         try:
-            # Get or create classifier
+            # Get or create classifier with default safetensors model
             model_key = f"{model_type}_{model_name}" if model_name else model_type
             if model_key not in classifiers:
                 model_path = None
                 if model_name:
                     model_path = os.path.join('models', model_name)
+                else:
+                    # Use the existing safetensors model by default
+                    default_model_path = os.path.join('..', 'models', 'resnet_model.safetensors')
+                    if os.path.exists(default_model_path):
+                        model_path = default_model_path
                 
                 classifiers[model_key] = PetClassifier(model_type=model_type, model_path=model_path)
             
@@ -150,12 +161,17 @@ def start_game():
         model_name = data.get('model_name', None)
         game_mode = data.get('game_mode', 'medium')
         
-        # Get or create classifier
+        # Get or create classifier with default safetensors model
         model_key = f"{model_type}_{model_name}" if model_name else model_type
         if model_key not in classifiers:
             model_path = None
             if model_name:
                 model_path = os.path.join('models', model_name)
+            else:
+                # Use the existing safetensors model by default
+                default_model_path = os.path.join('..', 'models', 'resnet_model.safetensors')
+                if os.path.exists(default_model_path):
+                    model_path = default_model_path
             
             classifiers[model_key] = PetClassifier(model_type=model_type, model_path=model_path)
         

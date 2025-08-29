@@ -1,9 +1,18 @@
 {
+  "buildCommand": "pnpm run build",
+  "outputDirectory": ".next",
+  "installCommand": "pnpm install --frozen-lockfile",
+  "framework": "nextjs",
+  "functions": {
+    "app/page.tsx": {
+      "maxDuration": 10
+    }
+  },
+  "regions": ["iad1"],
   "rewrites": [
     {
       "source": "/api/(.*)",
       "destination": "/api/index"
     }
-  ],
-  "outputDirectory": ".next"
+  ]
 }

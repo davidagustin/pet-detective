@@ -40,5 +40,9 @@
     "image-segmentation"
   ],
   "author": "Pet Detective Team",
-  "license": "MIT"
+  "license": "MIT",
+  "packageManager": "pnpm@10.14.0",
+  "engines": {
+    "node": "18.x"
+  }
 }

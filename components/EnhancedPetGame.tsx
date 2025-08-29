@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { apiClient } from '../lib/api-client'
 
 interface GameState {
   image: string
@@ -59,27 +60,12 @@ export default function EnhancedPetGame({ selectedModel, selectedModelName, user
     setIsTimerActive(false)
 
     try {
-      const response = await fetch('http://localhost:5328/api/game/start', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model_type: selectedModel,
-          model_name: selectedModelName,
-          game_mode: gameMode
-        }),
-      })
-      const data = await response.json()
-      if (response.ok) {
-        setGameState(data)
-        setIsTimerActive(true)
-      } else {
-        alert('Failed to start game: ' + data.error)
-      }
-    } catch (error) {
+      const data = await apiClient.startGame(selectedModel, selectedModelName || undefined, gameMode)
+      setGameState(data)
+      setIsTimerActive(true)
+    } catch (error: any) {
       console.error('Error starting game:', error)
-      alert('Failed to start game')
+      alert('Failed to start game: ' + error.message)
     } finally {
       setIsLoading(false)
     }
@@ -97,41 +83,31 @@ export default function EnhancedPetGame({ selectedModel, selectedModelName, user
     setIsLoading(true)
 
     try {
-      const response = await fetch('http://localhost:5328/api/game/check', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          user_answer: selectedAnswer,
-          correct_answer: gameState.correctAnswer,
-          user_id: user?.id,
-          username: user?.user_metadata?.username || user?.email?.split('@')[0],
-          model_type: selectedModel,
-          model_name: selectedModelName,
-          game_mode: gameMode,
-          time_taken: 30 - timeLeft
-        }),
+      const data = await apiClient.checkGameAnswer(selectedAnswer, {
+        correct_answer: gameState.correctAnswer,
+        user_id: user?.id,
+        username: user?.user_metadata?.username || user?.email?.split('@')[0],
+        model_type: selectedModel,
+        model_name: selectedModelName || undefined,
+        game_mode: gameMode,
+        time_taken: 30 - timeLeft
       })
-      const data = await response.json()
       
-      if (response.ok) {
-        setIsCorrect(data.is_correct)
-        setShowResults(true)
-        
-        if (data.is_correct) {
-          const newStreak = streak + 1
-          setStreak(newStreak)
-          const points = calculatePoints(data.time_taken, newStreak, gameMode)
-          setScore(score + points)
-        } else {
-          setStreak(0)
-        }
-        
-        setTotalQuestions(totalQuestions + 1)
-        onScoreUpdate(score, totalQuestions + 1)
+      setIsCorrect(data.is_correct)
+      setShowResults(true)
+      
+      if (data.is_correct) {
+        const newStreak = streak + 1
+        setStreak(newStreak)
+        const points = calculatePoints(data.time_taken, newStreak, gameMode)
+        setScore(score + points)
+      } else {
+        setStreak(0)
       }
-    } catch (error) {
+      
+      setTotalQuestions(totalQuestions + 1)
+      onScoreUpdate(score, totalQuestions + 1)
+    } catch (error: any) {
       console.error('Error checking answer:', error)
     } finally {
       setIsLoading(false)

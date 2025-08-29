@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef } from 'react'
+import { apiClient } from '../lib/api-client'
 
 interface SegmentationResult {
   originalImage: string
@@ -44,24 +45,11 @@ export default function ImageSegmentation() {
     setError(null)
 
     try {
-      const formData = new FormData()
-      formData.append('image', selectedFile)
-
-      const response = await fetch('http://localhost:5328/api/segment', {
-        method: 'POST',
-        body: formData,
-      })
-
-      const data = await response.json()
-
-      if (response.ok) {
-        setSegmentationResult(data)
-      } else {
-        setError(data.error || 'Segmentation failed')
-      }
-    } catch (error) {
+      const data = await apiClient.segmentImage(selectedFile)
+      setSegmentationResult(data)
+    } catch (error: any) {
       console.error('Segmentation error:', error)
-      setError('Failed to process image')
+      setError(error.message || 'Failed to process image')
     } finally {
       setIsProcessing(false)
     }

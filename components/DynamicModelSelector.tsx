@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { apiClient } from '../lib/api-client'
 
 interface AvailableModel {
   name: string
@@ -40,17 +41,11 @@ export default function DynamicModelSelector({ selectedModel, onModelSelect }: D
 
   const fetchAvailableModels = async () => {
     try {
-      const response = await fetch('http://localhost:5328/api/models/available')
-      const data = await response.json()
-      
-      if (response.ok) {
-        setAvailableModels(data.available_models || {})
-        setModelTypes(data.model_types || {})
-      } else {
-        setError(data.error || 'Failed to load available models')
-      }
-    } catch (error) {
-      setError('Failed to load available models')
+      const data = await apiClient.getAvailableModels()
+      setAvailableModels(data.available_models || {})
+      setModelTypes(data.model_types || {})
+    } catch (error: any) {
+      setError(error.message || 'Failed to load available models')
     } finally {
       setLoading(false)
     }

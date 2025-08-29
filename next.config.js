@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Remove rewrites for production deployment
-  // API calls should be made directly to the Flask backend
+  // Remove rewrites to avoid conflicts with Flask API
+  // The Flask API will handle /api/* routes directly
   experimental: {
     appDir: true,
   },

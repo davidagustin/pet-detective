@@ -5,6 +5,5 @@
       "destination": "/api/index"
     }
   ],
-  "buildCommand": "pip install -r requirements.txt",
   "outputDirectory": ".next"
 }

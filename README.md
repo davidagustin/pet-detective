@@ -58,9 +58,21 @@ Pet Detective is a comprehensive AI-powered platform that combines deep learning
    ```
 
 4. **Configure environment variables**
+   Create `.env.local` in your project root with the following variables:
    ```bash
-   cp .env.example .env.local
-   # Edit .env.local with your Supabase credentials
+   # Supabase Configuration (Required)
+   NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+   SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+   
+   # CORS Configuration (Optional - defaults to localhost:3000)
+   CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
+   
+   # Image Domains (Optional - for production)
+   NEXT_PUBLIC_IMAGE_DOMAINS=your-domain.com,cdn.example.com
+   
+   # Blob Storage (Optional - for image uploads)
+   BLOB_READ_WRITE_TOKEN=your_vercel_blob_token
    ```
 
 5. **Start the development servers**
@@ -69,11 +81,30 @@ Pet Detective is a comprehensive AI-powered platform that combines deep learning
    cd api && python index.py
    
    # Terminal 2: Start Next.js frontend
+   pnpm run next-dev
+   
+   # Or start both concurrently (recommended)
    pnpm dev
    ```
 
 6. **Open your browser**
    Navigate to `http://localhost:3000` to start using Pet Detective!
+
+---
+
+## ✨ Recent Improvements
+
+### 🔧 Code Quality & Security
+- **Environment-based Configuration**: Removed hardcoded localhost URLs, now configurable via environment variables
+- **Improved CORS Setup**: Dynamic CORS origins based on `CORS_ORIGINS` environment variable
+- **Enhanced .gitignore**: Added comprehensive patterns for logs, cache, IDE files, and temporary directories
+- **Script Cleanup**: Removed duplicate scripts, keeping only the TypeScript version for better maintainability
+- **Build Optimization**: All TypeScript compilation errors resolved
+
+### 🛡️ Security Enhancements
+- **No Hardcoded URLs**: All URLs now configurable through environment variables
+- **Log File Exclusion**: Log files are now properly excluded from version control
+- **Environment Variable Documentation**: Clear documentation for all required and optional environment variables
 
 ---
 

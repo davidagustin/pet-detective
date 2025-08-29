@@ -16,13 +16,12 @@
 
 import { list, del } from '@vercel/blob'
 import { createInterface } from 'readline'
-import { blobStorage } from '../lib/blob-storage'
 
 interface BlobInfo {
   url: string
   pathname: string
   size: number
-  uploadedAt: string
+  uploadedAt: Date
 }
 
 interface DeletionResults {
@@ -139,7 +138,7 @@ class TypeScriptBlobCleaner {
       // Show blob information
       console.log('\n📝 Blob details:')
       blobs.forEach((blob, index) => {
-        console.log(`  ${index + 1}. ${blob.pathname} (${this.formatBytes(blob.size)}, uploaded: ${new Date(blob.uploadedAt).toLocaleString()})`)
+        console.log(`  ${index + 1}. ${blob.pathname} (${this.formatBytes(blob.size)}, uploaded: ${blob.uploadedAt.toLocaleString()})`)
       })
 
       // Calculate total size

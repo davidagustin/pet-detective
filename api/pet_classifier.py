@@ -305,22 +305,26 @@ class PetClassifier:
             breed_types = {'cats': [], 'dogs': []}
         
         # Dynamic image loading from images folder
-        images_dir = '../images'
+        # Get absolute path to images directory
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        project_root = os.path.dirname(current_dir)
+        images_dir = os.path.join(project_root, 'images')
         available_images = {}
         
         # Scan the images directory for available pet images
         if os.path.exists(images_dir):
             for filename in os.listdir(images_dir):
                 if filename.lower().endswith(('.jpg', '.jpeg', '.png', '.gif')):
-                    # Extract breed name from filename (e.g., "abyssinian_1.jpg" -> "abyssinian")
-                    # Handle both formats: "abyssinian_1.jpg" and "american_bulldog_1.jpg"
+                    # Extract breed name from filename (e.g., "Abyssinian_1.jpg" -> "Abyssinian")
+                    # Handle both formats: "Abyssinian_1.jpg" and "american_bulldog_1.jpg"
                     parts = filename.split('_')
                     if len(parts) >= 2:
                         # Check if it's a cat breed with underscore (like British_Shorthair_1.jpg)
-                        if parts[0] in ['British', 'Egyptian', 'Maine', 'Russian']:
+                        first_part = parts[0].lower()
+                        if first_part in ['british', 'egyptian', 'maine', 'russian']:
                             # Cat breeds with underscores: British_Shorthair_1.jpg -> British_Shorthair
                             breed_filename = f"{parts[0]}_{parts[1]}"
-                        elif parts[0] in ['American', 'German', 'Yorkshire', 'English', 'Great', 'Staffordshire']:
+                        elif first_part in ['american', 'german', 'yorkshire', 'english', 'great', 'staffordshire']:
                             # Dog breeds with underscores: American_Bulldog_1.jpg -> American_Bulldog
                             breed_filename = f"{parts[0]}_{parts[1]}"
                         else:
@@ -474,7 +478,10 @@ class PetClassifier:
             breed_types = {'cats': [], 'dogs': []}
         
         # Dynamic image loading from images folder
-        images_dir = '../images'
+        # Get absolute path to images directory
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        project_root = os.path.dirname(current_dir)
+        images_dir = os.path.join(project_root, 'images')
         available_images = {}
         
         # Scan the images directory for available pet images
@@ -658,16 +665,19 @@ class PetClassifier:
 class PetDataset(Dataset):
     """Custom dataset for pet images"""
     
-    def __init__(self, data_dir: str, transform=None):
+    def __init__(self, data_dir: str, transform=None, use_segmentation=False):
         """
         Args:
             data_dir: Directory with pet images
             transform: Optional transform to be applied on images
+            use_segmentation: Whether to load segmentation masks from MAT files
         """
         self.data_dir = data_dir
         self.transform = transform
+        self.use_segmentation = use_segmentation
         self.images = []
         self.labels = []
+        self.masks = [] if use_segmentation else None
         
         # Load image paths and labels
         self._load_data()
@@ -679,10 +689,34 @@ class PetDataset(Dataset):
         breed_to_idx = {}
         idx = 0
         
+        # Import scipy for MAT files if needed
+        if self.use_segmentation:
+            try:
+                import scipy.io
+            except ImportError:
+                logger.warning("scipy not available for MAT file loading. Install with: pip install scipy")
+                self.use_segmentation = False
+        
         for filename in os.listdir(self.data_dir):
-            if filename.endswith('.jpg'):
+            if filename.lower().endswith(('.jpg', '.jpeg', '.png', '.gif')):
                 # Extract breed name from filename (e.g., "Abyssinian_1.jpg" -> "Abyssinian")
-                breed_name = filename.split('_')[0]
+                # Handle multi-word breeds like "British_Shorthair_1.jpg"
+                parts = filename.split('_')
+                if len(parts) >= 2:
+                    # Check for multi-word breeds
+                    first_part = parts[0].lower()
+                    if first_part in ['british', 'egyptian', 'maine', 'russian']:
+                        # Cat breeds with underscores: British_Shorthair_1.jpg -> British_Shorthair
+                        breed_name = f"{parts[0]}_{parts[1]}"
+                    elif first_part in ['american', 'german', 'yorkshire', 'english', 'great', 'staffordshire']:
+                        # Dog breeds with underscores: American_Bulldog_1.jpg -> American_Bulldog
+                        breed_name = f"{parts[0]}_{parts[1]}"
+                    else:
+                        # Single word breeds: Abyssinian_1.jpg -> Abyssinian
+                        breed_name = parts[0]
+                else:
+                    # Fallback for unusual naming
+                    breed_name = filename.split('.')[0]
                 
                 if breed_name not in breed_to_idx:
                     breed_to_idx[breed_name] = idx
@@ -690,8 +724,31 @@ class PetDataset(Dataset):
                 
                 self.images.append(os.path.join(self.data_dir, filename))
                 self.labels.append(breed_to_idx[breed_name])
+                
+                # Load corresponding MAT file if using segmentation
+                if self.use_segmentation:
+                    mat_filename = filename.replace('.jpg', '.mat').replace('.jpeg', '.mat').replace('.png', '.mat').replace('.gif', '.mat')
+                    mat_path = os.path.join(self.data_dir, mat_filename)
+                    if os.path.exists(mat_path):
+                        try:
+                            import scipy.io
+                            mat_data = scipy.io.loadmat(mat_path)
+                            # Extract segmentation mask (assuming it's in 'binsa' key based on our test)
+                            if 'binsa' in mat_data:
+                                self.masks.append(mat_path)
+                            else:
+                                self.masks.append(None)
+                                logger.warning(f"No 'binsa' key found in {mat_filename}")
+                        except Exception as e:
+                            logger.warning(f"Failed to load MAT file {mat_filename}: {e}")
+                            self.masks.append(None)
+                    else:
+                        self.masks.append(None)
         
         logger.info(f"Loaded {len(self.images)} images from {len(breed_to_idx)} breeds")
+        if self.use_segmentation:
+            valid_masks = sum(1 for mask in self.masks if mask is not None)
+            logger.info(f"Found {valid_masks} valid segmentation masks out of {len(self.images)} images")
         logger.info(f"Breeds found: {list(breed_to_idx.keys())}")
     
     def __len__(self):
@@ -705,5 +762,19 @@ class PetDataset(Dataset):
         
         if self.transform:
             image = self.transform(image)
+        
+        # Return segmentation mask if available
+        if self.use_segmentation and self.masks and idx < len(self.masks) and self.masks[idx]:
+            try:
+                import scipy.io
+                mat_data = scipy.io.loadmat(self.masks[idx])
+                if 'binsa' in mat_data:
+                    mask = mat_data['binsa'].flatten()  # Flatten to 1D array
+                    return image, label, mask
+                else:
+                    return image, label, None
+            except Exception as e:
+                logger.warning(f"Failed to load mask for index {idx}: {e}")
+                return image, label, None
         
         return image, label

@@ -37,10 +37,11 @@ class DatabaseGameManager:
                 # Extract breed from filename
                 parts = filename.split('_')
                 if len(parts) >= 2:
-                    # Handle multi-word breeds
-                    if parts[0].lower() in ['british', 'egyptian', 'maine', 'russian']:
+                    # Handle multi-word breeds - use case-insensitive comparison but preserve original case
+                    first_part_lower = parts[0].lower()
+                    if first_part_lower in ['british', 'egyptian', 'maine', 'russian']:
                         breed = f"{parts[0]} {parts[1]}"
-                    elif parts[0].lower() in ['american', 'german', 'yorkshire', 'english', 'great', 'staffordshire']:
+                    elif first_part_lower in ['american', 'german', 'yorkshire', 'english', 'great', 'staffordshire']:
                         if len(parts) >= 3:
                             breed = f"{parts[0]} {parts[1]}"
                         else:
@@ -98,8 +99,9 @@ class DatabaseGameManager:
         for filename in os.listdir(images_dir):
             if filename.lower().endswith(('.jpg', '.jpeg', '.png', '.gif')):
                 # Check if filename starts with any breed variation (case insensitive)
+                filename_lower = filename.lower()
                 for variation in breed_variations:
-                    if filename.lower().startswith(variation.lower()):
+                    if filename_lower.startswith(variation.lower() + '_'):
                         breed_images.append(filename)
                         break
         

@@ -5,9 +5,11 @@ const nextConfig = {
   experimental: {
     appDir: true,
   },
-  // Ensure proper static file handling
+  // Configure image domains based on environment
   images: {
-    domains: ['localhost'],
+    domains: process.env.NODE_ENV === 'development' 
+      ? ['localhost', '127.0.0.1'] 
+      : (process.env.NEXT_PUBLIC_IMAGE_DOMAINS || '').split(',').filter(Boolean),
   },
 }
 

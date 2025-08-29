@@ -100,3 +100,29 @@ POSTGRES_URL_NON_POOLING
 .env.development.local
 .env.test.local
 .env.production.local
+
+# Log files
+*.log
+logs/
+api/logs/
+log/
+api/log/
+
+# Cache directories
+.cache/
+.parcel-cache/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS generated files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Temporary directories
+tmp/
+temp/

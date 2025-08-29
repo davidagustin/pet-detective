@@ -28,9 +28,10 @@ import asyncio
 
 app = Flask(__name__)
 
-# Configure CORS with explicit credential support
+# Configure CORS with environment-based origins
+allowed_origins = os.getenv('CORS_ORIGINS', 'http://localhost:3000').split(',')
 CORS(app, 
-     origins=["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:3001"],
+     origins=allowed_origins,
      methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
      allow_headers=["Content-Type", "Authorization", "X-Requested-With", "X-CSRF-Token"],
      supports_credentials=True,

@@ -18,9 +18,16 @@ from model_manager import ModelManager
 from pet_segmentation import get_segmentation_model
 from model_metadata import get_all_models, get_model_metadata, get_model_stats, update_model_usage
 from database_game import database_game_manager
+from validation import APIValidator, ValidationError as ValidatorError
+from error_handler import (
+    error_handler, validate_content_type, validate_json_size, require_fields,
+    register_error_handlers, log_model_usage, APIError, ValidationError,
+    AuthenticationError, SecurityError, logger
+)
 import asyncio
 
 app = Flask(__name__)
+
 # Configure CORS with explicit credential support
 CORS(app, 
      origins=["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:3001"],
@@ -29,14 +36,44 @@ CORS(app,
      supports_credentials=True,
      expose_headers=["Content-Range", "X-Content-Range"])
 
+# Register error handlers
+register_error_handlers(app)
+
 @app.route('/api/health', methods=['GET'])
+@error_handler
 def health_check():
-    """Health check endpoint"""
-    return jsonify({
-        'status': 'healthy',
-        'message': 'Pet Detective API is running',
-        'timestamp': datetime.now().isoformat()
-    })
+    """Health check endpoint with comprehensive status"""
+    try:
+        # Check database connectivity (if available)
+        db_status = 'unknown'
+        if SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY:
+            try:
+                import requests
+                response = requests.get(
+                    f'{SUPABASE_URL}/rest/v1/',
+                    headers={'apikey': SUPABASE_SERVICE_ROLE_KEY},
+                    timeout=5
+                )
+                db_status = 'connected' if response.status_code == 200 else 'error'
+            except Exception:
+                db_status = 'error'
+        
+        # Check model availability
+        model_status = 'available' if os.path.exists('../models') else 'unavailable'
+        
+        return jsonify({
+            'status': 'healthy',
+            'message': 'Pet Detective API is running',
+            'timestamp': datetime.now().isoformat(),
+            'version': '1.0.0',
+            'components': {
+                'database': db_status,
+                'models': model_status,
+                'classifiers_loaded': len(classifiers)
+            }
+        })
+    except Exception as e:
+        raise APIError(f"Health check failed: {str(e)}")
 
 # Initialize model manager
 model_manager = ModelManager()
@@ -157,61 +194,99 @@ def scan_models_directory():
     return available_models, model_types
 
 @app.route('/api/predict', methods=['POST'])
+@error_handler
+@validate_content_type(['multipart/form-data'])
 def predict():
+    """Predict pet breed from uploaded image with comprehensive validation"""
+    temp_path = None
+    
     try:
+        # Validate image file
         if 'image' not in request.files:
-            return jsonify({'error': 'No image provided'}), 400
+            raise ValidationError('No image file provided in request')
         
         file = request.files['image']
-        model_type = request.form.get('model_type', 'resnet')
-        model_name = request.form.get('model_name', None)
+        if not file or not file.filename:
+            raise ValidationError('No file selected')
         
-        if file.filename == '':
-            return jsonify({'error': 'No file selected'}), 400
+        # Validate and sanitize inputs
+        filename, file_content = APIValidator.validate_image_file(file)
+        model_type = APIValidator.validate_model_type(request.form.get('model_type', 'resnet'))
+        model_name = None
+        if request.form.get('model_name'):
+            model_name = APIValidator.sanitize_string(request.form.get('model_name'), max_length=100)
         
-        # Save uploaded image temporarily
-        filename = secure_filename(file.filename)
-        temp_path = f'temp_{int(time.time())}_{filename}'
-        file.save(temp_path)
+        # Generate secure temporary filename
+        temp_path = APIValidator.generate_secure_filename(filename)
         
-        try:
-            # Get or create classifier with default safetensors model
-            model_key = f"{model_type}_{model_name}" if model_name else model_type
-            if model_key not in classifiers:
-                model_path = None
-                if model_name:
-                    model_path = os.path.join('models', model_name)
-                else:
-                    # Use the existing safetensors model by default
-                    default_model_path = os.path.join('..', 'models', 'resnet_model.safetensors')
-                    if os.path.exists(default_model_path):
-                        model_path = default_model_path
-                
+        # Save file with validated content
+        with open(temp_path, 'wb') as f:
+            f.write(file_content)
+        
+        # Get or create classifier
+        model_key = f"{model_type}_{model_name}" if model_name else model_type
+        if model_key not in classifiers:
+            model_path = None
+            if model_name:
+                model_path = os.path.join('models', model_name)
+                if not os.path.exists(model_path):
+                    raise ValidationError(f'Model not found: {model_name}')
+            else:
+                # Use the existing safetensors model by default
+                default_model_path = os.path.join('..', 'models', 'resnet_model.safetensors')
+                if os.path.exists(default_model_path):
+                    model_path = default_model_path
+            
+            try:
                 classifiers[model_key] = PetClassifier(model_type=model_type, model_path=model_path)
-            
-            classifier = classifiers[model_key]
-            
-            # Make prediction
-            predictions = classifier.predict(temp_path)
-            
-            return jsonify(predictions)
+            except Exception as e:
+                raise APIError(f'Failed to load model: {model_type}')
         
-        finally:
-            # Clean up temporary file
-            if os.path.exists(temp_path):
+        classifier = classifiers[model_key]
+        
+        # Make prediction with error handling
+        try:
+            predictions = classifier.predict(temp_path)
+        except Exception as e:
+            raise APIError('Prediction failed - invalid image or model error')
+        
+        # Log model usage
+        log_model_usage(model_type, model_name, 'prediction')
+        
+        # Validate prediction results
+        if not predictions or not isinstance(predictions, dict):
+            raise APIError('Invalid prediction results')
+        
+        logger.info(f"Successful prediction: {model_type} model")
+        return jsonify(predictions)
+        
+    finally:
+        # Always clean up temporary file
+        if temp_path and os.path.exists(temp_path):
+            try:
                 os.remove(temp_path)
-    
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+            except Exception as e:
+                logger.warning(f"Failed to clean up temporary file {temp_path}: {e}")
 
 @app.route('/api/game/start', methods=['POST'])
+@error_handler
+@validate_content_type(['application/json'])
+@validate_json_size()
 def start_game():
+    """Start a new pet guessing game with validation"""
     try:
         data = request.get_json()
-        model_type = data.get('model_type', 'resnet')
-        model_name = data.get('model_name', None)
-        game_mode = data.get('game_mode', 'medium')
-        animal_type = data.get('animal_type', None)  # Optional filter for dogs/cats only
+        if not data:
+            raise ValidationError('Empty JSON payload')
+        
+        # Validate and sanitize inputs
+        model_type = APIValidator.validate_model_type(data.get('model_type', 'resnet'))
+        game_mode = APIValidator.validate_game_mode(data.get('game_mode', 'medium'))
+        animal_type = APIValidator.validate_animal_type(data.get('animal_type'))
+        
+        model_name = None
+        if data.get('model_name'):
+            model_name = APIValidator.sanitize_string(data.get('model_name'), max_length=100)
         
         # Try to use database-driven game first
         try:
@@ -268,17 +343,26 @@ def start_game():
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/game/check', methods=['POST'])
+@error_handler
+@validate_content_type(['application/json'])
+@validate_json_size()
+@require_fields('user_answer', 'correct_answer', 'user_id')
 def check_answer():
+    """Check game answer with comprehensive validation"""
     try:
         data = request.get_json()
-        user_answer = data.get('user_answer')
-        correct_answer = data.get('correct_answer')
-        user_id = data.get('user_id')
-        username = data.get('username')
-        model_type = data.get('model_type', 'resnet')
-        model_name = data.get('model_name', None)
-        game_mode = data.get('game_mode', 'medium')
-        time_taken = data.get('time_taken', 0)
+        
+        # Validate and sanitize score data
+        validated_data = APIValidator.validate_score_data(data)
+        
+        user_answer = validated_data['user_answer']
+        correct_answer = validated_data['correct_answer']
+        user_id = validated_data['user_id']
+        username = validated_data.get('username')
+        model_type = validated_data.get('model_type', 'resnet')
+        model_name = validated_data.get('model_name')
+        game_mode = validated_data.get('game_mode', 'medium')
+        time_taken = validated_data.get('time_taken', 0)
         
         is_correct = user_answer.lower() == correct_answer.lower()
         

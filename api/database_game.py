@@ -18,8 +18,13 @@ class DatabaseGameManager:
         """Get list of available breeds from local images directory"""
         import os
         
-        images_dir = '../images'
+        # Get absolute path to images directory
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        project_root = os.path.dirname(current_dir)
+        images_dir = os.path.join(project_root, 'images')
+        
         if not os.path.exists(images_dir):
+            print(f"Images directory not found at: {images_dir}")
             return []
         
         # Extract unique breeds from filenames
@@ -68,8 +73,12 @@ class DatabaseGameManager:
         import os
         
         # Always use local images from the images folder
-        images_dir = '../images'
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        project_root = os.path.dirname(current_dir)
+        images_dir = os.path.join(project_root, 'images')
+        
         if not os.path.exists(images_dir):
+            print(f"Images directory not found at: {images_dir}")
             return None
         
         # Find all images for this breed in the local directory
@@ -161,8 +170,27 @@ class DatabaseGameManager:
                 additional_needed = (num_options - 1) - len(wrong_options)
                 wrong_options.extend(random.sample(remaining_other_breeds, min(additional_needed, len(remaining_other_breeds))))
         
-        # Combine and shuffle all options
-        all_options = [correct_breed] + wrong_options
+        # Ensure we have the right number of total options
+        if len(wrong_options) < (num_options - 1):
+            # Pad with additional wrong options if needed
+            print(f"Warning: Only found {len(wrong_options)} wrong options for {correct_breed}, needed {num_options-1}")
+        
+        # Combine options and ensure proper randomization
+        all_options = [correct_breed] + wrong_options[:num_options-1]
+        
+        # Shuffle the options so correct answer appears in different positions
+        random.shuffle(all_options)
+        
+        # Double-check we have unique options
+        all_options = list(dict.fromkeys(all_options))  # Remove duplicates while preserving order
+        
+        # If we lost options due to duplicates, pad with more wrong options
+        while len(all_options) < num_options and len(all_options) < len(available_breeds):
+            remaining = [b for b in available_breeds if b not in all_options]
+            if remaining:
+                all_options.append(random.choice(remaining))
+        
+        # Final shuffle to ensure randomization
         random.shuffle(all_options)
         
         return {

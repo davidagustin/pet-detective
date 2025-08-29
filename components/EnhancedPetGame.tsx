@@ -161,10 +161,13 @@ export default function EnhancedPetGame({ selectedModel, selectedModelName, user
             <button
               key={mode}
               onClick={() => setGameMode(mode)}
+              disabled={gameState !== null || isLoading}
               className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                 gameMode === mode
                   ? 'bg-blue-500 text-white'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  : gameState !== null || isLoading
+                  ? 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-300 dark:hover:bg-gray-500'
               }`}
             >
               {mode.charAt(0).toUpperCase() + mode.slice(1)}

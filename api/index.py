@@ -1,14 +1,15 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory, Response
 from flask_cors import CORS
 import os
 import json
 import threading
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from werkzeug.utils import secure_filename
 import base64
 from io import BytesIO
 from PIL import Image
+import hashlib
 
 from pet_classifier import PetClassifier
 from train_model import train_pet_classifier
@@ -163,7 +164,13 @@ def start_game():
         # Generate game question
         game_data = classifier.generate_game_question(game_mode=game_mode)
         
-        return jsonify(game_data)
+        # Add caching headers for game data
+        response = jsonify(game_data)
+        response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
+        
+        return response
     
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -418,6 +425,22 @@ def get_models_stats():
         return jsonify(stats)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@app.route('/api/images/<path:filename>')
+def serve_image(filename):
+    """Serve images from the images directory with caching and optimization"""
+    try:
+        # Security check - prevent directory traversal
+        if '..' in filename or filename.startswith('/'):
+            return jsonify({'error': 'Invalid filename'}), 400
+        
+        # Add caching headers for better performance
+        response = send_from_directory('images', filename)
+        response.headers['Cache-Control'] = 'public, max-age=31536000'  # 1 year cache
+        response.headers['ETag'] = hashlib.md5(filename.encode()).hexdigest()
+        return response
+    except Exception as e:
+        return jsonify({'error': f'Image not found: {filename}'}), 404
 
 @app.route('/api/leaderboard', methods=['GET'])
 def get_leaderboard():

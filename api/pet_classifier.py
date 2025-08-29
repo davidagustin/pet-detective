@@ -281,18 +281,15 @@ class PetClassifier:
 
     def generate_game_question(self, game_mode: str = 'medium') -> dict:
         """
-        Generate a game question using local images dynamically from the images folder
+        Generate a game question using server-side image URLs for optimal performance
         
         Args:
             game_mode: Difficulty level ('easy', 'medium', 'hard')
             
         Returns:
-            Dictionary containing game question data
+            Dictionary containing game question data with server-side image URLs
         """
         import random
-        import base64
-        from PIL import Image
-        import io
         import os
         
         # Load breed mapping from JSON file
@@ -336,7 +333,8 @@ class PetClassifier:
                     standardized_breed = filename_to_breed.get(breed_name, breed_name.title())
                     
                     if standardized_breed in self.class_names:
-                        image_path = f'/images/{filename}'
+                        # Use server-side image URL for optimal performance
+                        image_path = f'/api/images/{filename}'
                         if standardized_breed not in available_images:
                             available_images[standardized_breed] = []
                         available_images[standardized_breed].append(image_path)
@@ -345,21 +343,21 @@ class PetClassifier:
         if not available_images:
             logger.warning("No images found in images folder. Using fallback images.")
             available_images = {
-                'Abyssinian': ['/images/Abyssinian_1.jpg'],
-                'Beagle': ['/images/beagle_1.jpg'],
-                'Bengal': ['/images/Bengal_1.jpg'],
-                'Birman': ['/images/Birman_1.jpg'],
-                'Boxer': ['/images/boxer_1.jpg'],
-                'British Shorthair': ['/images/British_1.jpg'],
-                'Chihuahua': ['/images/chihuahua_1.jpg'],
-                'Egyptian Mau': ['/images/Egyptian_1.jpg'],
-                'German Shorthaired': ['/images/german_1.jpg'],
-                'Maine Coon': ['/images/Maine_1.jpg'],
-                'Persian': ['/images/Persian_1.jpg'],
-                'Pug': ['/images/pug_1.jpg'],
-                'Ragdoll': ['/images/Ragdoll_1.jpg'],
-                'Siamese': ['/images/Siamese_1.jpg'],
-                'Yorkshire Terrier': ['/images/yorkshire_terrier_1.jpg']
+                'Abyssinian': ['/api/images/Abyssinian_1.jpg'],
+                'Beagle': ['/api/images/beagle_1.jpg'],
+                'Bengal': ['/api/images/Bengal_1.jpg'],
+                'Birman': ['/api/images/Birman_1.jpg'],
+                'Boxer': ['/api/images/boxer_1.jpg'],
+                'British Shorthair': ['/api/images/British_1.jpg'],
+                'Chihuahua': ['/api/images/chihuahua_1.jpg'],
+                'Egyptian Mau': ['/api/images/Egyptian_1.jpg'],
+                'German Shorthaired': ['/api/images/german_1.jpg'],
+                'Maine Coon': ['/api/images/Maine_1.jpg'],
+                'Persian': ['/api/images/Persian_1.jpg'],
+                'Pug': ['/api/images/pug_1.jpg'],
+                'Ragdoll': ['/api/images/Ragdoll_1.jpg'],
+                'Siamese': ['/api/images/Siamese_1.jpg'],
+                'Yorkshire Terrier': ['/api/images/yorkshire_terrier_1.jpg']
             }
         
         # Select a random correct answer from available breeds

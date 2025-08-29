@@ -7,10 +7,20 @@ import Leaderboard from '../components/Leaderboard'
 import DynamicModelSelector from '../components/DynamicModelSelector'
 import EnhancedPetGame from '../components/EnhancedPetGame'
 import ImageSegmentation from '../components/ImageSegmentation'
+import { apiClient } from '../lib/api-client'
+import { config } from '../lib/config'
+import { 
+  useAccessibility, 
+  useLoadingState, 
+  useErrorState, 
+  useSuccessState,
+  accessibilityUtils,
+  ScreenReaderOnly 
+} from '../lib/accessibility'
 
 const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co',
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key'
+  config.supabase.url,
+  config.supabase.anonKey
 )
 
 export default function Home() {
@@ -22,10 +32,15 @@ export default function Home() {
   const [showDynamicModelSelector, setShowDynamicModelSelector] = useState(false)
   const [showSegmentation, setShowSegmentation] = useState(false)
   const [predictions, setPredictions] = useState<{ [key: string]: number } | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useLoadingState(false)
+  const [error, setError] = useErrorState()
+  const [success, setSuccess] = useSuccessState()
   const [score, setScore] = useState(0)
   const [totalQuestions, setTotalQuestions] = useState(0)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  
+  // Accessibility hooks
+  const { isHighContrast, isReducedMotion, toggleHighContrast, toggleReducedMotion } = useAccessibility()
 
   useEffect(() => {
     // Check for existing session
@@ -40,6 +55,27 @@ export default function Home() {
       setUser(session?.user ?? null)
     })
 
+    // Handle auth callback messages
+    const urlParams = new URLSearchParams(window.location.search)
+    const authSuccess = urlParams.get('success')
+    const authError = urlParams.get('error')
+
+    if (authSuccess === 'auth_success') {
+      alert('Successfully signed in!')
+      // Clean up URL
+      window.history.replaceState({}, document.title, window.location.pathname)
+    } else if (authError) {
+      let errorMessage = 'Authentication failed'
+      if (authError === 'auth_failed') {
+        errorMessage = 'Authentication failed. Please try again.'
+      } else if (authError === 'no_session') {
+        errorMessage = 'No active session found.'
+      }
+      alert(errorMessage)
+      // Clean up URL
+      window.history.replaceState({}, document.title, window.location.pathname)
+    }
+
     return () => subscription.unsubscribe()
   }, [])
 
@@ -49,30 +85,17 @@ export default function Home() {
 
     setIsLoading(true)
     setPredictions(null)
+    setError(null)
+    setSuccess(null)
 
     try {
-      const formData = new FormData()
-      formData.append('image', file)
-      formData.append('model_type', selectedModel)
-      if (selectedModelName) {
-        formData.append('model_name', selectedModelName)
-      }
-
-      const response = await fetch('http://localhost:5328/api/predict', {
-        method: 'POST',
-        body: formData,
-      })
-
-      const data = await response.json()
-      if (response.ok) {
-        setPredictions(data)
-      } else {
-        console.error('Prediction failed:', data.error)
-        alert('Failed to analyze image: ' + data.error)
-      }
-    } catch (error) {
-      console.error('Error uploading image:', error)
-      alert('Failed to upload image')
+      const data = await apiClient.predictPetBreed(file, selectedModel, selectedModelName || undefined)
+      setPredictions(data)
+      setSuccess('Image analyzed successfully!')
+      accessibilityUtils.announce('Image analysis completed')
+    } catch (error: any) {
+      setError(error.message || 'Failed to analyze image')
+      accessibilityUtils.announce(`Error: ${error.message}`, 'assertive')
     } finally {
       setIsLoading(false)
     }
@@ -90,49 +113,56 @@ export default function Home() {
 
   const trainModel = async () => {
     if (!user) {
-      alert('Please sign in to train models')
+      setError('Please sign in to train models')
+      accessibilityUtils.announce('Authentication required to train models', 'assertive')
       return
     }
 
-    try {
-      const response = await fetch('http://localhost:5328/api/train', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          epochs: 5,
-          batch_size: 32,
-          learning_rate: 0.001,
-          model_type: selectedModel,
-          scheduler_type: 'cosine',
-          weight_decay: 1e-4,
-          dropout_rate: 0.5,
-          early_stopping_patience: 5,
-          enable_tuning: false,
-          tuning_method: 'optuna',
-          n_trials: 10
-        }),
-      })
+    if (!config.features.enableTraining) {
+      setError('Model training is not available in production')
+      accessibilityUtils.announce('Model training is not available in production', 'assertive')
+      return
+    }
 
-      const data = await response.json()
-      if (response.ok) {
-        console.log('Training started:', data)
-        alert('Model training started! Check the models directory for the trained model.')
-      } else {
-        console.error('Training failed:', data.error)
-        alert('Failed to start training: ' + data.error)
+    setIsLoading(true)
+    setError(null)
+    setSuccess(null)
+
+    try {
+      const trainingParams = {
+        epochs: 5,
+        batch_size: 32,
+        learning_rate: 0.001,
+        model_type: selectedModel,
+        scheduler_type: 'cosine',
+        weight_decay: 1e-4,
+        dropout_rate: 0.5,
+        early_stopping_patience: 5,
+        enable_tuning: false,
+        tuning_method: 'optuna',
+        n_trials: 10
       }
-    } catch (error) {
-      console.error('Error starting training:', error)
-      alert('Failed to start training')
+
+      const data = await apiClient.trainModel(trainingParams)
+      setSuccess('Model training started! Check the models directory for the trained model.')
+      accessibilityUtils.announce('Model training started successfully')
+    } catch (error: any) {
+      setError(error.message || 'Failed to start training')
+      accessibilityUtils.announce(`Training error: ${error.message}`, 'assertive')
+    } finally {
+      setIsLoading(false)
     }
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className={`min-h-screen bg-gray-50 ${isHighContrast ? 'high-contrast' : ''} ${isReducedMotion ? 'reduce-motion' : ''}`}>
+      {/* Skip to main content link */}
+      <a href="#main-content" className="skip-link">
+        Skip to main content
+      </a>
+      
       {/* Header */}
-      <header className="bg-white shadow-sm border-b">
+      <header className="bg-white shadow-sm border-b" role="banner">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
@@ -140,14 +170,38 @@ export default function Home() {
             </div>
             
             <div className="flex items-center space-x-4">
+              {/* Accessibility Controls */}
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={toggleHighContrast}
+                  className="btn btn-secondary text-xs"
+                  aria-label={`${isHighContrast ? 'Disable' : 'Enable'} high contrast mode`}
+                  title={`${isHighContrast ? 'Disable' : 'Enable'} high contrast mode`}
+                >
+                  <ScreenReaderOnly>High Contrast</ScreenReaderOnly>
+                  <span aria-hidden="true">🎨</span>
+                </button>
+                <button
+                  onClick={toggleReducedMotion}
+                  className="btn btn-secondary text-xs"
+                  aria-label={`${isReducedMotion ? 'Disable' : 'Enable'} reduced motion`}
+                  title={`${isReducedMotion ? 'Disable' : 'Enable'} reduced motion`}
+                >
+                  <ScreenReaderOnly>Reduced Motion</ScreenReaderOnly>
+                  <span aria-hidden="true">🎬</span>
+                </button>
+              </div>
+              
               {user ? (
                 <>
-                  <span className="text-sm text-gray-600">
+                  <span className="text-sm text-gray-600" aria-label={`Welcome, ${user.user_metadata?.username || user.email?.split('@')[0]}`}>
                     Welcome, {user.user_metadata?.username || user.email?.split('@')[0]}!
                   </span>
                   <button
                     onClick={() => setShowLeaderboard(!showLeaderboard)}
-                    className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                    className="btn btn-primary"
+                    aria-expanded={showLeaderboard}
+                    aria-controls="leaderboard-section"
                   >
                     {showLeaderboard ? 'Hide' : 'Show'} Leaderboard
                   </button>
@@ -156,9 +210,10 @@ export default function Home() {
                       await supabase.auth.signOut()
                       setUser(null)
                     }}
-                    className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center"
+                    className="btn btn-secondary flex items-center"
+                    aria-label="Sign out"
                   >
-                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                     </svg>
                     Sign Out
@@ -167,7 +222,8 @@ export default function Home() {
               ) : (
                 <button
                   onClick={() => setShowAuth(true)}
-                  className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                  className="btn btn-success"
+                  aria-label="Sign in to access additional features"
                 >
                   Sign In
                 </button>

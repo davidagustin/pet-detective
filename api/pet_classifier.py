@@ -10,6 +10,20 @@ import numpy as np
 from typing import List, Tuple, Dict
 import requests
 import io
+import json
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+# Import SafeTensors support
+try:
+    from safetensors.torch import load_file as load_safetensors
+    SAFETENSORS_AVAILABLE = True
+except ImportError:
+    SAFETENSORS_AVAILABLE = False
+    logger.warning("SafeTensors not available. Install with: pip install safetensors")
 
 class PetClassifier:
     def __init__(self, num_classes: int = 37, model_path: str = None, model_type: str = "resnet"):
@@ -151,13 +165,68 @@ class PetClassifier:
         
         return predictions
     
-    def save_model(self, path: str):
-        """Save the trained model"""
-        torch.save(self.model.state_dict(), path)
+    def save_model(self, path: str, format: str = "auto"):
+        """
+        Save the trained model
+        
+        Args:
+            path: Path to save the model
+            format: Format to save in ('pytorch', 'safetensors', 'auto')
+        """
+        file_ext = os.path.splitext(path)[1].lower()
+        
+        if format == "auto":
+            if file_ext == '.safetensors':
+                format = "safetensors"
+            elif file_ext == '.pth':
+                format = "pytorch"
+            else:
+                # Default to safetensors if available, otherwise pytorch
+                format = "safetensors" if SAFETENSORS_AVAILABLE else "pytorch"
+                if format == "safetensors" and not path.endswith('.safetensors'):
+                    path = f"{os.path.splitext(path)[0]}.safetensors"
+        
+        if format == "safetensors":
+            if not SAFETENSORS_AVAILABLE:
+                raise ImportError("SafeTensors not available. Install with: pip install safetensors")
+            
+            from safetensors.torch import save_file
+            logger.info(f"Saving model in SafeTensors format: {path}")
+            save_file(self.model.state_dict(), path)
+            
+        elif format == "pytorch":
+            logger.info(f"Saving model in PyTorch format: {path}")
+            torch.save(self.model.state_dict(), path)
+            
+        else:
+            raise ValueError(f"Unsupported format: {format}. Supported formats: 'pytorch', 'safetensors'")
+        
+        logger.info(f"Model saved successfully to: {path}")
     
     def load_model(self, path: str):
-        """Load a trained model"""
-        self.model.load_state_dict(torch.load(path, map_location=self.device))
+        """Load a trained model (supports both .pth and .safetensors formats)"""
+        if not os.path.exists(path):
+            raise FileNotFoundError(f"Model file not found: {path}")
+        
+        file_ext = os.path.splitext(path)[1].lower()
+        
+        if file_ext == '.safetensors':
+            if not SAFETENSORS_AVAILABLE:
+                raise ImportError("SafeTensors not available. Install with: pip install safetensors")
+            
+            logger.info(f"Loading SafeTensors model from: {path}")
+            state_dict = load_safetensors(path)
+            self.model.load_state_dict(state_dict)
+            
+        elif file_ext == '.pth':
+            logger.info(f"Loading PyTorch model from: {path}")
+            state_dict = torch.load(path, map_location=self.device)
+            self.model.load_state_dict(state_dict)
+            
+        else:
+            raise ValueError(f"Unsupported model format: {file_ext}. Supported formats: .pth, .safetensors")
+        
+        logger.info(f"Model loaded successfully from: {path}")
     
     def train(self, train_loader: DataLoader, val_loader: DataLoader, 
               epochs: int = 10, learning_rate: float = 0.001):
@@ -210,6 +279,212 @@ class PetClassifier:
             print(f'Validation Accuracy: {100*correct/total:.2f}%')
             print('-' * 50)
 
+    def generate_game_question(self, game_mode: str = 'medium') -> dict:
+        """
+        Generate a game question using local images dynamically from the images folder
+        
+        Args:
+            game_mode: Difficulty level ('easy', 'medium', 'hard')
+            
+        Returns:
+            Dictionary containing game question data
+        """
+        import random
+        import base64
+        from PIL import Image
+        import io
+        import os
+        
+        # Load breed mapping from JSON file
+        breed_mapping_path = os.path.join(os.path.dirname(__file__), 'breed_mapping.json')
+        try:
+            with open(breed_mapping_path, 'r') as f:
+                breed_data = json.load(f)
+                filename_to_breed = breed_data['filename_to_breed']
+                breed_types = breed_data['breed_types']
+        except FileNotFoundError:
+            logger.warning("breed_mapping.json not found. Using fallback mapping.")
+            filename_to_breed = {}
+            breed_types = {'cats': [], 'dogs': []}
+        
+        # Dynamic image loading from images folder
+        images_dir = 'images'
+        available_images = {}
+        
+        # Scan the images directory for available pet images
+        if os.path.exists(images_dir):
+            for filename in os.listdir(images_dir):
+                if filename.lower().endswith(('.jpg', '.jpeg', '.png', '.gif')):
+                    # Extract breed name from filename (e.g., "abyssinian_1.jpg" -> "abyssinian")
+                    # Handle both formats: "abyssinian_1.jpg" and "american_bulldog_1.jpg"
+                    parts = filename.split('_')
+                    if len(parts) >= 2:
+                        # Check if it's a cat breed with underscore (like British_Shorthair_1.jpg)
+                        if parts[0] in ['British', 'Egyptian', 'Maine', 'Russian']:
+                            # Cat breeds with underscores: British_Shorthair_1.jpg -> British_Shorthair
+                            breed_name = '_'.join(parts[:-1])
+                        elif parts[0].islower():
+                            # Dog breeds: american_bulldog_1.jpg -> american_bulldog
+                            breed_name = '_'.join(parts[:-1])
+                        else:
+                            # Cat breeds: Abyssinian_1.jpg -> Abyssinian
+                            breed_name = parts[0]
+                    else:
+                        breed_name = parts[0]
+                    
+                    # Map the breed name to the standardized class name
+                    standardized_breed = filename_to_breed.get(breed_name, breed_name.title())
+                    
+                    if standardized_breed in self.class_names:
+                        image_path = f'/images/{filename}'
+                        if standardized_breed not in available_images:
+                            available_images[standardized_breed] = []
+                        available_images[standardized_breed].append(image_path)
+        
+        # If no images found in the folder, use fallback sample images
+        if not available_images:
+            logger.warning("No images found in images folder. Using fallback images.")
+            available_images = {
+                'Abyssinian': ['/images/Abyssinian_1.jpg'],
+                'Beagle': ['/images/beagle_1.jpg'],
+                'Bengal': ['/images/Bengal_1.jpg'],
+                'Birman': ['/images/Birman_1.jpg'],
+                'Boxer': ['/images/boxer_1.jpg'],
+                'British Shorthair': ['/images/British_1.jpg'],
+                'Chihuahua': ['/images/chihuahua_1.jpg'],
+                'Egyptian Mau': ['/images/Egyptian_1.jpg'],
+                'German Shorthaired': ['/images/german_1.jpg'],
+                'Maine Coon': ['/images/Maine_1.jpg'],
+                'Persian': ['/images/Persian_1.jpg'],
+                'Pug': ['/images/pug_1.jpg'],
+                'Ragdoll': ['/images/Ragdoll_1.jpg'],
+                'Siamese': ['/images/Siamese_1.jpg'],
+                'Yorkshire Terrier': ['/images/yorkshire_terrier_1.jpg']
+            }
+        
+        # Select a random correct answer from available breeds
+        available_breeds = list(available_images.keys())
+        if not available_breeds:
+            return {
+                'error': 'No pet images available for the game'
+            }
+        
+        # Ensure we have enough different breeds for the quiz
+        if len(available_breeds) < 4:
+            return {
+                'error': f'Not enough different pet breeds available. Need at least 4, found {len(available_breeds)}'
+            }
+        
+        correct_answer = random.choice(available_breeds)
+        
+        # Select a random image for the correct breed
+        correct_image_path = random.choice(available_images[correct_answer])
+        
+        # Use breed types from JSON data
+        cat_breeds = set(breed_types.get('cats', []))
+        dog_breeds = set(breed_types.get('dogs', []))
+        
+        # Determine if correct answer is a cat or dog
+        is_cat_question = correct_answer in cat_breeds
+        is_dog_question = correct_answer in dog_breeds
+        
+        # Filter remaining breeds to same type (cat or dog)
+        if is_cat_question:
+            remaining_breeds = [breed for breed in remaining_breeds if breed in cat_breeds]
+        elif is_dog_question:
+            remaining_breeds = [breed for breed in remaining_breeds if breed in dog_breeds]
+        else:
+            # If breed type is unclear, use all remaining breeds
+            pass
+        
+        # Ensure we have enough breeds of the same type
+        if len(remaining_breeds) < 3:
+            # If not enough same-type breeds, fall back to all breeds
+            remaining_breeds = available_breeds.copy()
+            remaining_breeds.remove(correct_answer)
+        
+        # Generate wrong options based on difficulty - ensure all are different breeds
+        wrong_options = []
+        
+        if game_mode == 'easy':
+            # Easy: 2 wrong options from different breeds
+            num_wrong = min(2, len(remaining_breeds))
+        elif game_mode == 'medium':
+            # Medium: 3 wrong options from different breeds
+            num_wrong = min(3, len(remaining_breeds))
+        else:  # hard
+            # Hard: 3 wrong options from different breeds
+            num_wrong = min(3, len(remaining_breeds))
+        
+        # Select wrong options from different breeds of the same type
+        wrong_options = random.sample(remaining_breeds, num_wrong)
+        
+        # Verify all options are different breeds
+        all_options = [correct_answer] + wrong_options
+        if len(set(all_options)) != len(all_options):
+            return {
+                'error': 'Failed to generate unique breed options for the quiz'
+            }
+        
+        # Create options list with correct answer
+        options = [correct_answer] + wrong_options
+        random.shuffle(options)
+        
+        # Get AI prediction for the image
+        try:
+            # For now, we'll use a placeholder prediction
+            # In a real implementation, you would load and predict the actual image
+            ai_prediction = correct_answer  # Placeholder
+            ai_confidence = random.uniform(0.7, 0.95)  # Placeholder confidence
+        except Exception as e:
+            logger.error(f"Error getting AI prediction: {e}")
+            ai_prediction = correct_answer
+            ai_confidence = 0.8
+        
+        return {
+            'image': correct_image_path,
+            'options': options,
+            'correctAnswer': correct_answer,
+            'aiPrediction': ai_prediction,
+            'aiConfidence': round(ai_confidence, 2)
+        }
+
+    def get_available_models(self):
+        """Get list of available models in the models directory"""
+        available_models = []
+        models_dir = 'models'
+        
+        if os.path.exists(models_dir):
+            for filename in os.listdir(models_dir):
+                if filename.endswith(('.pth', '.safetensors')):
+                    filepath = os.path.join(models_dir, filename)
+                    stat = os.stat(filepath)
+                    
+                    # Try to determine model type from filename
+                    model_type = 'unknown'
+                    if 'resnet' in filename.lower():
+                        model_type = 'resnet'
+                    elif 'alexnet' in filename.lower():
+                        model_type = 'alexnet'
+                    elif 'mobilenet' in filename.lower():
+                        model_type = 'mobilenet'
+                    
+                    # Determine format
+                    file_format = 'safetensors' if filename.endswith('.safetensors') else 'pytorch'
+                    
+                    available_models.append({
+                        'name': filename,
+                        'type': model_type,
+                        'format': file_format,
+                        'path': filepath,
+                        'size_mb': round(stat.st_size / (1024 * 1024), 2),
+                        'created': int(stat.st_ctime),
+                        'modified': int(stat.st_mtime)
+                    })
+        
+        return available_models
+
+
 class PetDataset(Dataset):
     """Custom dataset for pet images"""
     
@@ -246,8 +521,8 @@ class PetDataset(Dataset):
                 self.images.append(os.path.join(self.data_dir, filename))
                 self.labels.append(breed_to_idx[breed_name])
         
-        print(f"Loaded {len(self.images)} images from {len(breed_to_idx)} breeds")
-        print(f"Breeds found: {list(breed_to_idx.keys())}")
+        logger.info(f"Loaded {len(self.images)} images from {len(breed_to_idx)} breeds")
+        logger.info(f"Breeds found: {list(breed_to_idx.keys())}")
     
     def __len__(self):
         return len(self.images)

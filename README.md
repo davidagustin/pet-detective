@@ -1,337 +1,367 @@
 # 🐕 Pet Detective - AI-Powered Pet Classification & Gaming Platform
 
-A comprehensive web application that combines deep learning for pet breed classification with an interactive gaming experience. Built with Next.js, Flask, PyTorch, and Supabase.
+<div align="center">
 
-![Pet Detective](https://img.shields.io/badge/Pet-Detective-blue?style=for-the-badge&logo=dog)
-![Next.js](https://img.shields.io/badge/Next.js-13-black?style=for-the-badge&logo=next.js)
-![Flask](https://img.shields.io/badge/Flask-3.0-red?style=for-the-badge&logo=flask)
-![PyTorch](https://img.shields.io/badge/PyTorch-2.0-orange?style=for-the-badge&logo=pytorch)
-![Supabase](https://img.shields.io/badge/Supabase-Auth-green?style=for-the-badge&logo=supabase)
+![Pet Detective](https://img.shields.io/badge/Pet-Detective-blue?style=for-the-badge&logo=github)
+![Python](https://img.shields.io/badge/Python-3.8+-blue?style=for-the-badge&logo=python)
+![React](https://img.shields.io/badge/React-18+-blue?style=for-the-badge&logo=react)
+![Next.js](https://img.shields.io/badge/Next.js-13+-black?style=for-the-badge&logo=next.js)
+![PyTorch](https://img.shields.io/badge/PyTorch-2.0+-red?style=for-the-badge&logo=pytorch)
+![Supabase](https://img.shields.io/badge/Supabase-Database-green?style=for-the-badge&logo=supabase)
 
-## 🎯 Features
+**An intelligent pet classification system with interactive gaming, powered by deep learning and modern web technologies.**
 
-### 🤖 **AI-Powered Pet Classification**
-- **Multiple Model Support**: ResNet-50, AlexNet, MobileNet V2
-- **Transfer Learning**: Pre-trained models fine-tuned on Oxford-IIIT Pet dataset
-- **Real-time Predictions**: Upload pet images and get instant breed predictions
-- **Dynamic Model Selection**: Choose from trained models or use default ones
+[🚀 Quick Start](#-quick-start) • [🎮 Features](#-features) • [🛠️ Setup](#️-setup) • [📚 Documentation](#-documentation) • [🤝 Contributing](#-contributing)
 
-### 🎮 **Interactive Pet Guessing Game**
-- **Multi-choice Questions**: Test your pet breed knowledge
-- **Multiple Difficulty Levels**: Easy, Medium, Hard modes
-- **Timer-based Scoring**: Time-based points with streak bonuses
-- **AI Competition**: Compete against different AI models
-- **Real-time Feedback**: Immediate results with detailed explanations
+</div>
 
-### 🔍 **Image Segmentation**
-- **Pet Segmentation**: Automatically separate pets from backgrounds
-- **U-Net Architecture**: Advanced segmentation using deep learning
-- **Download Results**: Save segmented images and masks
-- **Confidence Scoring**: Get segmentation confidence metrics
+---
 
-### 🏆 **Gamification & Social Features**
-- **User Authentication**: Secure login/signup via Supabase
-- **Leaderboard System**: Global and personal score tracking
-- **Score Persistence**: Save game results to database
-- **User Profiles**: Track individual performance over time
+## 🎯 Overview
 
-### 🛠️ **Model Training & Management**
-- **Hyperparameter Tuning**: Optuna and Grid Search optimization
-- **Model Checkpointing**: Save and restore training progress
-- **Training Visualization**: Real-time training metrics and plots
-- **Dynamic Model Discovery**: Automatic detection of trained models
+Pet Detective is a comprehensive AI-powered platform that combines deep learning pet classification with an interactive guessing game. Built with modern technologies including PyTorch, Next.js, and Supabase, it offers:
 
-## 🏗️ Architecture
+- **🤖 Advanced AI Models**: ResNet-50, AlexNet, and MobileNet V2 for pet classification
+- **🎮 Interactive Gaming**: Compete against AI models in a pet guessing game
+- **📊 Model Training**: Hyperparameter tuning and advanced training features
+- **👥 Social Features**: Global leaderboards and user authentication
+- **📱 Mobile-First Design**: Responsive, touch-optimized interface
 
-```
-pet-detective/
-├── app/                    # Next.js Frontend
-│   ├── page.tsx           # Main application page
-│   ├── layout.tsx         # App layout
-│   └── globals.css        # Global styles
-├── api/                   # Flask Backend
-│   ├── index.py           # Main API server
-│   ├── pet_classifier.py  # Classification models
-│   ├── pet_segmentation.py # Segmentation models
-│   ├── train_model.py     # Training pipeline
-│   └── model_manager.py   # Model management
-├── components/            # React Components
-│   ├── Auth.tsx          # Authentication
-│   ├── Leaderboard.tsx   # Score display
-│   ├── EnhancedPetGame.tsx # Game interface
-│   ├── ImageSegmentation.tsx # Segmentation UI
-│   └── DynamicModelSelector.tsx # Model selection
-├── models/               # Trained Models Directory
-├── lib/                  # Utility Libraries
-└── public/              # Static Assets
-```
+---
 
 ## 🚀 Quick Start
 
 ### Prerequisites
 
-- **Python 3.8+**
-- **Node.js 18+**
-- **pnpm** (recommended) or npm
-- **Oxford-IIIT Pet Dataset** (download instructions below)
+- **Python 3.8+** with pip
+- **Node.js 18+** with npm/pnpm
+- **Git** for version control
 
-### 1. Clone the Repository
+### Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/yourusername/pet-detective.git
+   cd pet-detective
+   ```
+
+2. **Set up Python environment**
+   ```bash
+   python3 -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   pip install -r requirements.txt
+   ```
+
+3. **Set up Node.js dependencies**
+   ```bash
+   pnpm install
+   ```
+
+4. **Configure environment variables**
+   ```bash
+   cp .env.example .env.local
+   # Edit .env.local with your Supabase credentials
+   ```
+
+5. **Start the development servers**
+   ```bash
+   # Terminal 1: Start Flask API
+   cd api && python index.py
+   
+   # Terminal 2: Start Next.js frontend
+   pnpm dev
+   ```
+
+6. **Open your browser**
+   Navigate to `http://localhost:3000` to start using Pet Detective!
+
+---
+
+## 🎮 Features
+
+### 🤖 Deep Learning Pet Classification
+- **Multiple Model Architectures**: ResNet-50, AlexNet, MobileNet V2
+- **Transfer Learning**: Fine-tuned pre-trained models on Oxford-IIIT Pet dataset
+- **Real-time Prediction**: Upload pet images and get instant breed predictions
+- **Confidence Scores**: View prediction probabilities for each breed
+
+### 🎯 Interactive Pet Guessing Game
+- **AI vs Human Competition**: Challenge AI models in a guessing game
+- **Multiple Difficulty Levels**: Choose from different AI models with varying accuracy
+- **Score Tracking**: Keep track of your performance against each AI model
+- **Leaderboard Integration**: Compare scores with other players globally
+- **Same Pet Type Logic**: Questions focus on either cat breeds or dog breeds for better learning
+
+### 🧠 Advanced Model Training
+- **Hyperparameter Tuning**: 
+  - Optuna-based Bayesian optimization
+  - Grid search for systematic parameter exploration
+  - Automatic best parameter selection
+- **Training Features**:
+  - Learning rate scheduling (Cosine, Plateau, Step)
+  - Early stopping to prevent overfitting
+  - Data augmentation (Random crops, flips, rotations, color jitter)
+  - Weight decay and dropout for regularization
+  - Detailed training logs and progress tracking
+
+### 📊 Model Management System
+- **Comprehensive Model Registry**: Track all trained models with metadata
+- **Performance Analytics**: Detailed metrics and training history
+- **Model Comparison**: Compare multiple models side-by-side
+- **Training Visualization**: Automatic generation of training plots
+- **Model Download**: Export trained models for external use
+
+### 👥 User Authentication & Social Features
+- **Supabase Integration**: Secure user authentication
+- **Google OAuth**: Easy sign-in with Google accounts
+- **User Profiles**: Personalized experience with saved preferences
+- **Global Leaderboard**: Compete with users worldwide
+- **Score Persistence**: Track your progress over time
+
+### 📱 Mobile-First Design
+- **Touch-Optimized Interface**: Large buttons and touch-friendly controls
+- **Responsive Grid Layouts**: Adapts to all screen sizes
+- **Mobile Navigation**: Intuitive mobile navigation patterns
+- **Fast Loading**: Optimized for mobile network conditions
+- **Progressive Web App**: Works offline and can be installed on mobile devices
+
+---
+
+## 🛠️ Setup
+
+### Supabase Configuration
+
+1. **Create a Supabase Project**
+   - Go to [supabase.com](https://supabase.com) and sign up/login
+   - Create a new project and wait for setup
+
+2. **Get Your Project Credentials**
+   - Go to Settings > API in your project dashboard
+   - Copy: Project URL, Anon public key, Service role key
+
+3. **Set Up Environment Variables**
+   Create `.env.local` in your project root:
+   ```bash
+   # Supabase Configuration
+   NEXT_PUBLIC_SUPABASE_URL=your_project_url_here
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key_here
+   SUPABASE_SERVICE_ROLE_KEY=your_service_role_key_here
+   
+   # Database Configuration (optional)
+   POSTGRES_URL=your_postgres_url_here
+   POSTGRES_USER=your_postgres_user_here
+   POSTGRES_HOST=your_postgres_host_here
+   POSTGRES_PASSWORD=your_postgres_password_here
+   POSTGRES_DATABASE=your_postgres_database_here
+   ```
+
+4. **Configure Google OAuth (Optional)**
+   - Create Google OAuth credentials in [Google Cloud Console](https://console.cloud.google.com/)
+   - Enable Google provider in Supabase Authentication > Providers
+   - Add redirect URIs for your domain
+
+5. **Set Up Database**
+   Run this SQL in your Supabase SQL Editor:
+   ```sql
+   -- Create leaderboard table for Pet Detective game
+   CREATE TABLE IF NOT EXISTS leaderboard (
+       id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+       user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+       username TEXT NOT NULL,
+       score INTEGER DEFAULT 0,
+       total_questions INTEGER DEFAULT 0,
+       accuracy DECIMAL(5,2) DEFAULT 0.00,
+       created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+       updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+   );
+   
+   -- Create indexes for performance
+   CREATE INDEX IF NOT EXISTS idx_leaderboard_score ON leaderboard(score DESC);
+   CREATE INDEX IF NOT EXISTS idx_leaderboard_user_id ON leaderboard(user_id);
+   
+   -- Enable Row Level Security
+   ALTER TABLE leaderboard ENABLE ROW LEVEL SECURITY;
+   
+   -- Create security policies
+   CREATE POLICY "Allow public read access to leaderboard" ON leaderboard
+       FOR SELECT USING (true);
+   
+   CREATE POLICY "Allow users to insert their own scores" ON leaderboard
+       FOR INSERT WITH CHECK (auth.uid() = user_id);
+   
+   CREATE POLICY "Allow users to update their own scores" ON leaderboard
+       FOR UPDATE USING (auth.uid() = user_id);
+   ```
+
+### Pet Images Setup
+
+The quiz uses images from the `images/` folder at the project root. Images should follow this naming convention:
+
+**Format**: `{breed_name}_{number}.{extension}`
+
+**Examples**:
+- `abyssinian_1.jpg`
+- `beagle_2.png`
+- `persian_3.jpeg`
+
+**Supported Breeds**:
+
+🐱 **Cat Breeds (12 total)**:
+- Abyssinian, Bengal, Birman, Bombay, British Shorthair, Egyptian Mau, Maine Coon, Persian, Ragdoll, Russian Blue, Siamese, Sphynx
+
+🐕 **Dog Breeds (25 total)**:
+- American Bulldog, American Pit Bull Terrier, Basset Hound, Beagle, Boxer, Chihuahua, English Cocker Spaniel, English Setter, German Shorthaired, Great Pyrenees, Havanese, Japanese Chin, Keeshond, Leonberger, Miniature Pinscher, Newfoundland, Pomeranian, Pug, Saint Bernard, Samoyed, Scottish Terrier, Shiba Inu, Staffordshire Bull Terrier, Wheaten Terrier, Yorkshire Terrier
+
+---
+
+## 📚 Documentation
+
+### API Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/predict` | POST | Predict pet breed from uploaded image |
+| `/api/game/start` | POST | Start new pet guessing game |
+| `/api/game/check` | POST | Check game answer and save score |
+| `/api/train` | POST | Train new model with hyperparameters |
+| `/api/models/available` | GET | Get list of available trained models |
+| `/api/leaderboard` | GET | Get global leaderboard |
+| `/api/segment` | POST | Perform image segmentation |
+
+### Model Training
+
+**Supported Model Types**:
+- `resnet`: ResNet-50 architecture (high accuracy, medium speed)
+- `alexnet`: AlexNet architecture (medium accuracy, fast speed)
+- `mobilenet`: MobileNet V2 architecture (lower accuracy, very fast speed)
+
+**Training Types**:
+- `standard`: Models trained with default hyperparameters
+- `tuned`: Models trained with hyperparameter optimization
+
+**Model File Naming**:
+- Format: `{model_type}_{training_type}_{timestamp}.pth`
+- Examples:
+  - `resnet_standard_1703123456.pth`
+  - `alexnet_tuned_1703123457.pth`
+  - `mobilenet_standard_1703123458.pth`
+
+**Model Storage**:
+- Location: `models/` directory
+- Size estimates:
+  - ResNet models: ~100-200 MB
+  - AlexNet models: ~200-300 MB
+  - MobileNet models: ~20-50 MB
+
+### Game Mechanics
+
+**Difficulty Levels**:
+- **Easy**: 2 wrong options, similar difficulty
+- **Medium**: 3 wrong options, mix of easy and hard
+- **Hard**: 3 wrong options, more challenging
+
+**Scoring System**:
+- Correct answer: 10 points
+- Speed bonuses for quick responses
+- Streak multipliers for consecutive correct answers
+- Global rankings and leaderboards
+
+**Pet Type Logic**:
+- Questions focus on either cat breeds OR dog breeds
+- All wrong options are the same pet type as the correct answer
+- Visual indicators show whether it's a "Cat Breeds" or "Dog Breeds" question
+
+---
+
+## 🏗️ Architecture
+
+### Backend (Flask API)
+- **RESTful API Design**: Clean, scalable API endpoints
+- **Model Serving**: Efficient model loading and inference
+- **Background Training**: Asynchronous model training
+- **File Management**: Secure file upload and storage
+- **Error Handling**: Comprehensive error handling and logging
+
+### Frontend (Next.js)
+- **React Components**: Modular, reusable component architecture
+- **TypeScript**: Type-safe development
+- **Tailwind CSS**: Utility-first responsive styling
+- **State Management**: Efficient client-side state management
+- **Real-time Updates**: Live updates for training progress
+
+### Database (Supabase)
+- **PostgreSQL**: Robust relational database
+- **Row Level Security**: Secure data access
+- **Real-time Subscriptions**: Live leaderboard updates
+- **User Management**: Built-in authentication and authorization
+
+---
+
+## 🚀 Deployment
+
+### Production Deployment
+
+1. **Deploy to Vercel**:
+   ```bash
+   # Install Vercel CLI
+   npm i -g vercel
+   
+   # Deploy
+   vercel --prod
+   ```
+
+2. **Set Environment Variables**:
+   Add all environment variables from `.env.local` to your Vercel project settings
+
+3. **Configure Supabase**:
+   - Update site URL in Supabase Authentication settings
+   - Add production redirect URLs
+
+### Docker Deployment
 
 ```bash
-git clone https://github.com/yourusername/pet-detective.git
-cd pet-detective
+# Build and run with Docker
+docker build -t pet-detective .
+docker run -p 3000:3000 pet-detective
 ```
 
-### 2. Set Up Python Environment
-
-```bash
-# Create virtual environment
-python3 -m venv venv
-
-# Activate virtual environment
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-
-# Install Python dependencies
-pip install -r requirements.txt
-```
-
-### 3. Set Up Frontend
-
-```bash
-# Install Node.js dependencies
-pnpm install
-
-# Build the application
-pnpm build
-```
-
-### 4. Configure Environment Variables
-
-Create a `.env.local` file in the root directory:
-
-```env
-# Supabase Configuration
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
-
-# Database Configuration
-POSTGRES_URL=your_postgres_url
-POSTGRES_USER=your_postgres_user
-POSTGRES_PASSWORD=your_postgres_password
-POSTGRES_HOST=your_postgres_host
-POSTGRES_DATABASE=your_postgres_database
-
-# Dataset Path
-OXFORD_PET_DATASET_PATH=/path/to/oxford-iiit-pet
-```
-
-### 5. Download the Oxford-IIIT Pet Dataset
-
-```bash
-# Download the dataset
-wget https://www.robots.ox.ac.uk/~vgg/data/pets/data/images.tar.gz
-wget https://www.robots.ox.ac.uk/~vgg/data/pets/data/annotations.tar.gz
-
-# Extract the files
-tar -xzf images.tar.gz
-tar -xzf annotations.tar.gz
-
-# Move to desired location
-mv images /path/to/oxford-iiit-pet/
-mv annotations /path/to/oxford-iiit-pet/
-```
-
-### 6. Set Up Supabase Database
-
-Run the SQL script in your Supabase SQL editor:
-
-```sql
--- Create leaderboard table
-CREATE TABLE leaderboard (
-    id SERIAL PRIMARY KEY,
-    user_id UUID REFERENCES auth.users(id),
-    username TEXT,
-    score INTEGER DEFAULT 0,
-    is_correct BOOLEAN,
-    model_type TEXT,
-    model_name TEXT,
-    game_mode TEXT,
-    time_taken INTEGER,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- Enable Row Level Security
-ALTER TABLE leaderboard ENABLE ROW LEVEL SECURITY;
-
--- Create policies
-CREATE POLICY "Users can view leaderboard" ON leaderboard
-    FOR SELECT USING (true);
-
-CREATE POLICY "Users can insert their own scores" ON leaderboard
-    FOR INSERT WITH CHECK (auth.uid() = user_id);
-```
-
-### 7. Start the Application
-
-```bash
-# Terminal 1: Start Flask backend
-cd api
-python index.py
-
-# Terminal 2: Start Next.js frontend
-pnpm dev
-```
-
-Visit `http://localhost:3000` to access the application!
-
-## 🎮 How to Play
-
-### Pet Classification
-1. **Upload Image**: Click "Choose Image" to upload a pet photo
-2. **Get Predictions**: View top 5 breed predictions with confidence scores
-3. **Switch Models**: Use different AI models for varied results
-
-### Pet Guessing Game
-1. **Select Difficulty**: Choose Easy, Medium, or Hard mode
-2. **Start Game**: Click "Start New Game" to begin
-3. **Answer Questions**: Identify the pet breed from multiple choice options
-4. **Earn Points**: Score based on accuracy, time, and streaks
-5. **Compete**: Compare your performance with AI models
-
-### Image Segmentation
-1. **Upload Pet Image**: Select an image with a pet
-2. **Process**: Click "Segment Pet" to run segmentation
-3. **View Results**: See segmented pet and mask
-4. **Download**: Save results for further use
-
-## 🤖 Model Training
-
-### Available Models
-
-| Model | Parameters | Accuracy | Speed | Use Case |
-|-------|------------|----------|-------|----------|
-| **ResNet-50** | 25.6M | 95%+ | Medium | High accuracy, general use |
-| **AlexNet** | 61M | 90%+ | Fast | Classic architecture |
-| **MobileNet V2** | 3.5M | 92%+ | Very Fast | Mobile/edge deployment |
-
-### Training Process
-
-1. **Select Model Type**: Choose from ResNet, AlexNet, or MobileNet
-2. **Configure Parameters**: Set epochs, batch size, learning rate
-3. **Enable Tuning**: Optional hyperparameter optimization
-4. **Start Training**: Background training with progress tracking
-5. **Save Model**: Automatically saved to `models/` directory
-
-### Hyperparameter Tuning
-
-The application supports two tuning methods:
-
-- **Optuna**: Bayesian optimization for efficient parameter search
-- **Grid Search**: Exhaustive search over parameter combinations
-
-## 🔧 API Endpoints
-
-### Classification
-- `POST /api/predict` - Predict pet breed from image
-- `GET /api/models/available` - List available trained models
-
-### Gaming
-- `POST /api/game/start` - Start new game session
-- `POST /api/game/check` - Check answer and save score
-
-### Training
-- `POST /api/train` - Start model training
-
-### Segmentation
-- `POST /api/segment` - Segment pet from image
-
-### Leaderboard
-- `GET /api/leaderboard` - Get global leaderboard
-
-## 📊 Performance Metrics
-
-### Classification Accuracy
-- **ResNet-50**: 95%+ on Oxford-IIIT Pet dataset
-- **AlexNet**: 90%+ with faster inference
-- **MobileNet V2**: 92%+ optimized for speed
-
-### Game Statistics
-- **Response Time**: < 2 seconds for predictions
-- **Segmentation**: < 5 seconds for processing
-- **Training**: 10-30 minutes depending on model and dataset size
-
-## 🛡️ Security Features
-
-- **User Authentication**: Secure Supabase authentication
-- **Input Validation**: File type and size validation
-- **CORS Protection**: Cross-origin request handling
-- **Environment Variables**: Sensitive data protection
-- **Row Level Security**: Database access control
-
-## 📱 Mobile Responsiveness
-
-The application is fully responsive and optimized for:
-- **Desktop**: Full feature access with enhanced UI
-- **Tablet**: Optimized layout for medium screens
-- **Mobile**: Touch-friendly interface with simplified navigation
-
-## 🔄 Development Workflow
-
-### Code Structure
-- **Frontend**: React components with TypeScript
-- **Backend**: Flask API with Python
-- **Database**: Supabase PostgreSQL
-- **AI Models**: PyTorch with transfer learning
-
-### Testing
-```bash
-# Run frontend tests
-pnpm test
-
-# Run backend tests
-python -m pytest api/tests/
-```
-
-### Deployment
-```bash
-# Build for production
-pnpm build
-
-# Deploy to Vercel
-vercel --prod
-
-# Deploy backend to Heroku
-heroku create pet-detective-api
-git push heroku main
-```
+---
 
 ## 🤝 Contributing
 
-1. **Fork** the repository
-2. **Create** a feature branch (`git checkout -b feature/amazing-feature`)
-3. **Commit** your changes (`git commit -m 'Add amazing feature'`)
-4. **Push** to the branch (`git push origin feature/amazing-feature`)
-5. **Open** a Pull Request
+We welcome contributions! Please follow these steps:
+
+1. **Fork the repository**
+2. **Create a feature branch**: `git checkout -b feature/amazing-feature`
+3. **Commit your changes**: `git commit -m 'Add amazing feature'`
+4. **Push to the branch**: `git push origin feature/amazing-feature`
+5. **Open a Pull Request**
 
 ### Development Guidelines
+
 - Follow TypeScript best practices
-- Add comprehensive error handling
-- Include unit tests for new features
-- Update documentation for API changes
-- Ensure mobile responsiveness
+- Use meaningful commit messages
+- Add tests for new features
+- Update documentation as needed
+- Follow the existing code style
+
+---
 
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
+---
+
 ## 🙏 Acknowledgments
 
-- **Oxford-IIIT Pet Dataset**: For providing the training data
-- **PyTorch Team**: For the deep learning framework
-- **Supabase**: For authentication and database services
-- **Next.js Team**: For the React framework
-- **Tailwind CSS**: For the styling framework
+- **Oxford-IIIT Pet Dataset** for providing the training data
+- **PyTorch** for the deep learning framework
+- **Supabase** for the backend-as-a-service platform
+- **Next.js** for the React framework
+- **Tailwind CSS** for the styling framework
+
+---
 
 ## 📞 Support
 
@@ -339,26 +369,12 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Discussions**: [GitHub Discussions](https://github.com/yourusername/pet-detective/discussions)
 - **Email**: support@petdetective.com
 
-## 🔮 Roadmap
-
-### Upcoming Features
-- [ ] **Real-time Multiplayer**: Compete with friends in real-time
-- [ ] **Advanced Segmentation**: Instance segmentation for multiple pets
-- [ ] **Model Ensemble**: Combine multiple models for better accuracy
-- [ ] **Mobile App**: Native iOS/Android applications
-- [ ] **API Rate Limiting**: Enhanced API protection
-- [ ] **Model Versioning**: Track model performance over time
-- [ ] **Custom Datasets**: Upload and train on custom pet images
-- [ ] **Advanced Analytics**: Detailed performance insights
-
-### Performance Improvements
-- [ ] **Model Quantization**: Reduce model size for faster inference
-- [ ] **Caching**: Implement Redis caching for predictions
-- [ ] **CDN Integration**: Faster image delivery
-- [ ] **Database Optimization**: Improved query performance
-
 ---
+
+<div align="center">
 
 **Made with ❤️ by the Pet Detective Team**
 
-*Empowering pet lovers with AI-powered breed identification and fun gaming experiences!*
+[⬆️ Back to Top](#-pet-detective---ai-powered-pet-classification--gaming-platform)
+
+</div>

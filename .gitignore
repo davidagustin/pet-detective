@@ -68,6 +68,12 @@ ENV/
 *.pth
 *.pt
 *.pkl
+models/*.pth
+models/*.pt
+models/*.pkl
+api/*.pth
+api/*.pt
+api/*.pkl
 
 # Temporary files
 temp_image.jpg

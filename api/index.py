@@ -14,6 +14,7 @@ from pet_classifier import PetClassifier
 from train_model import train_pet_classifier
 from model_manager import ModelManager
 from pet_segmentation import get_segmentation_model
+from model_metadata import get_all_models, get_model_metadata, get_model_stats, update_model_usage
 
 app = Flask(__name__)
 CORS(app)
@@ -69,7 +70,7 @@ def scan_models_directory():
     
     if os.path.exists('models'):
         for filename in os.listdir('models'):
-            if filename.endswith('.pth'):
+            if filename.endswith(('.pth', '.safetensors')):
                 filepath = os.path.join('models', filename)
                 stat = os.stat(filepath)
                 
@@ -82,9 +83,13 @@ def scan_models_directory():
                 elif 'mobilenet' in filename.lower():
                     model_type = 'mobilenet'
                 
+                # Determine format
+                file_format = 'safetensors' if filename.endswith('.safetensors') else 'pytorch'
+                
                 available_models[filename] = {
                     'name': filename,
                     'type': model_type,
+                    'format': file_format,
                     'path': filepath,
                     'size_mb': round(stat.st_size / (1024 * 1024), 2),
                     'created': int(stat.st_ctime),
@@ -310,6 +315,107 @@ def get_available_models():
             'model_types': model_types
         })
     
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/models/metadata', methods=['GET'])
+def get_models_metadata():
+    """Get detailed metadata for all models"""
+    try:
+        models = get_all_models()
+        metadata_list = []
+        
+        for model in models:
+            metadata_dict = {
+                'name': model.name,
+                'file_path': model.file_path,
+                'format': model.format,
+                'model_type': model.model_type,
+                'file_size_mb': model.file_size_mb,
+                'num_parameters': model.num_parameters,
+                'validation_accuracy': model.validation_accuracy,
+                'training_accuracy': model.training_accuracy,
+                'training_epochs': model.training_epochs,
+                'learning_rate': model.learning_rate,
+                'optimizer': model.optimizer,
+                'scheduler': model.scheduler,
+                'weight_decay': model.weight_decay,
+                'dropout_rate': model.dropout_rate,
+                'training_duration_seconds': model.training_duration_seconds,
+                'device_used': model.device_used,
+                'hyperparameter_tuning': model.hyperparameter_tuning,
+                'tuning_method': model.tuning_method,
+                'usage_count': model.usage_count,
+                'last_used': model.last_used,
+                'average_inference_time': model.average_inference_time,
+                'created_timestamp': model.created_timestamp,
+                'modified_timestamp': model.modified_timestamp,
+                'file_hash': model.file_hash,
+                'is_active': model.is_active,
+                'is_public': model.is_public
+            }
+            metadata_list.append(metadata_dict)
+        
+        return jsonify({
+            'models': metadata_list,
+            'total_count': len(metadata_list)
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/models/metadata/<model_name>', methods=['GET'])
+def get_model_metadata_endpoint(model_name):
+    """Get detailed metadata for a specific model"""
+    try:
+        metadata = get_model_metadata(model_name)
+        if not metadata:
+            return jsonify({'error': 'Model not found'}), 404
+        
+        metadata_dict = {
+            'name': metadata.name,
+            'file_path': metadata.file_path,
+            'format': metadata.format,
+            'model_type': metadata.model_type,
+            'file_size_mb': metadata.file_size_mb,
+            'num_parameters': metadata.num_parameters,
+            'validation_accuracy': metadata.validation_accuracy,
+            'training_accuracy': metadata.training_accuracy,
+            'training_epochs': metadata.training_epochs,
+            'learning_rate': metadata.learning_rate,
+            'optimizer': metadata.optimizer,
+            'scheduler': metadata.scheduler,
+            'weight_decay': metadata.weight_decay,
+            'dropout_rate': metadata.dropout_rate,
+            'training_duration_seconds': metadata.training_duration_seconds,
+            'device_used': metadata.device_used,
+            'hyperparameter_tuning': metadata.hyperparameter_tuning,
+            'tuning_method': metadata.tuning_method,
+            'best_hyperparameters': metadata.best_hyperparameters,
+            'usage_count': metadata.usage_count,
+            'last_used': metadata.last_used,
+            'average_inference_time': metadata.average_inference_time,
+            'created_timestamp': metadata.created_timestamp,
+            'modified_timestamp': metadata.modified_timestamp,
+            'file_hash': metadata.file_hash,
+            'description': metadata.description,
+            'tags': metadata.tags,
+            'version': metadata.version,
+            'author': metadata.author,
+            'is_active': metadata.is_active,
+            'is_public': metadata.is_public,
+            'requires_auth': metadata.requires_auth
+        }
+        
+        return jsonify(metadata_dict)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/models/stats', methods=['GET'])
+def get_models_stats():
+    """Get overall statistics about all models"""
+    try:
+        stats = get_model_stats()
+        return jsonify(stats)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

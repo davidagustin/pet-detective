@@ -9,6 +9,7 @@ import torch.optim as optim
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader, random_split
 from pet_classifier import PetClassifier, PetDataset
+from model_metadata import register_model
 import optuna
 from optuna.samplers import TPESampler
 from datetime import datetime
@@ -71,7 +72,7 @@ def log_training_stats(epoch, total_epochs, train_loss, val_loss, val_accuracy,
         logger.info(f"Epoch {epoch}/{total_epochs} - Train Loss: {train_loss:.4f}, "
                    f"Val Loss: {val_loss:.4f}, Val Acc: {val_accuracy:.2f}%")
 
-def train_pet_classifier(data_dir: str, model_save_path: str = "pet_model.pth", 
+def train_pet_classifier(data_dir: str, model_save_path: str = "models/pet_model.pth", 
                         batch_size: int = 32, epochs: int = 10, learning_rate: float = 0.001,
                         log_interval: int = 10, model_type: str = "resnet",
                         scheduler_type: str = "cosine", weight_decay: float = 1e-4,
@@ -298,13 +299,13 @@ def train_pet_classifier(data_dir: str, model_save_path: str = "pet_model.pth",
         # Save best model
         if val_accuracy > best_val_accuracy:
             best_val_accuracy = val_accuracy
-            classifier.save_model(f"{model_save_path}.best")
+            classifier.save_model(f"{model_save_path}.best", format="safetensors")
             print(f"🏆 New best model saved! Validation accuracy: {best_val_accuracy:.2f}%")
         
         # Save checkpoint every 5 epochs
         if (epoch + 1) % 5 == 0:
             checkpoint_path = f"{model_save_path}.epoch_{epoch + 1}"
-            classifier.save_model(checkpoint_path)
+            classifier.save_model(checkpoint_path, format="safetensors")
             print(f"💾 Checkpoint saved: {checkpoint_path}")
     
     # Training completed
@@ -318,7 +319,7 @@ def train_pet_classifier(data_dir: str, model_save_path: str = "pet_model.pth",
     print(f"Final validation accuracy: {val_accuracy:.2f}%")
     
     # Save final model
-    classifier.save_model(model_save_path)
+    classifier.save_model(model_save_path, format="safetensors")
     print(f"💾 Final model saved to: {model_save_path}")
     
     # Save training history
@@ -326,6 +327,46 @@ def train_pet_classifier(data_dir: str, model_save_path: str = "pet_model.pth",
     with open(history_path, 'w') as f:
         json.dump(training_history, f, indent=2)
     print(f"📊 Training history saved to: {history_path}")
+    
+    # Register model with metadata
+    try:
+        training_info = {
+            'epochs': epochs,
+            'batch_size': batch_size,
+            'learning_rate': learning_rate,
+            'scheduler_type': scheduler_type,
+            'weight_decay': weight_decay,
+            'dropout_rate': dropout_rate,
+            'use_cuda': torch.cuda.is_available()
+        }
+        
+        performance_info = {
+            'validation_accuracy': best_val_accuracy,
+            'training_accuracy': train_accuracy,
+            'validation_loss': val_loss,
+            'training_loss': train_loss,
+            'training_duration': total_time
+        }
+        
+        dataset_info = {
+            'name': 'Oxford-IIIT Pet Dataset',
+            'size': len(full_dataset),
+            'num_classes': 37,
+            'class_names': classifier.class_names
+        }
+        
+        metadata = register_model(
+            model_path=model_save_path,
+            model_type=model_type,
+            training_info=training_info,
+            performance_info=performance_info,
+            dataset_info=dataset_info
+        )
+        
+        print(f"📋 Model registered with metadata: {metadata.name}")
+        
+    except Exception as e:
+        print(f"⚠️  Warning: Failed to register model metadata: {e}")
     
     # Register model with model manager
     from model_manager import model_manager

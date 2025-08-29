@@ -8,6 +8,11 @@ import os
 import time
 import base64
 import io
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 class DoubleConv(nn.Module):
     """(convolution => BN => ReLU) * 2"""

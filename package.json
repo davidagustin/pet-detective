@@ -1,6 +1,7 @@
 {
-  "name": "next-flask",
-  "version": "0.1.0",
+  "name": "pet-detective",
+  "version": "1.0.0",
+  "description": "AI-powered pet classification and gaming platform with deep learning models",
   "private": true,
   "scripts": {
     "flask-dev": "FLASK_DEBUG=1 pip3 install -r requirements.txt && python3 -m flask --app api/index run -p 5328",
@@ -8,7 +9,9 @@
     "dev": "concurrently \"pnpm run next-dev\" \"pnpm run flask-dev\"",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "clean": "rm -rf .next out dist",
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.56.0",
@@ -25,5 +28,17 @@
     "react-dom": "18.2.0",
     "tailwindcss": "3.3.2",
     "typescript": "5.0.4"
-  }
+  },
+  "keywords": [
+    "pet-classification",
+    "deep-learning",
+    "pytorch",
+    "nextjs",
+    "flask",
+    "supabase",
+    "ai-gaming",
+    "image-segmentation"
+  ],
+  "author": "Pet Detective Team",
+  "license": "MIT"
 }

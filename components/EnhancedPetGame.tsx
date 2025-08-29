@@ -30,6 +30,16 @@ export default function EnhancedPetGame({ selectedModel, selectedModelName, user
   const [timeLeft, setTimeLeft] = useState(30)
   const [isTimerActive, setIsTimerActive] = useState(false)
 
+  // Helper function to determine pet type
+  const getPetType = (breed: string): 'cat' | 'dog' => {
+    const catBreeds = [
+      'Abyssinian', 'Bengal', 'Birman', 'Bombay', 'British Shorthair', 
+      'Egyptian Mau', 'Maine Coon', 'Persian', 'Ragdoll', 'Russian Blue', 
+      'Siamese', 'Sphynx'
+    ]
+    return catBreeds.includes(breed) ? 'cat' : 'dog'
+  }
+
   useEffect(() => {
     let timer: NodeJS.Timeout
     if (isTimerActive && timeLeft > 0) {
@@ -225,6 +235,12 @@ export default function EnhancedPetGame({ selectedModel, selectedModelName, user
               alt="Pet to guess"
               className="w-full h-80 object-cover rounded-lg shadow-md"
             />
+            {/* Pet Type Indicator */}
+            <div className="absolute top-4 left-4 bg-white bg-opacity-90 px-3 py-1 rounded-full shadow-md">
+              <span className="text-sm font-medium text-gray-700">
+                {getPetType(gameState.correctAnswer) === 'cat' ? '🐱 Cat Breeds' : '🐕 Dog Breeds'}
+              </span>
+            </div>
             {showResults && (
               <div className="absolute inset-0 bg-black bg-opacity-50 rounded-lg flex items-center justify-center">
                 <div className="text-white text-center">
@@ -245,7 +261,9 @@ export default function EnhancedPetGame({ selectedModel, selectedModelName, user
           {/* Answer Options */}
           {!showResults && (
             <div className="space-y-3">
-              <h3 className="font-semibold text-gray-800 text-center">What breed is this pet?</h3>
+              <h3 className="font-semibold text-gray-800 text-center">
+                What {getPetType(gameState.correctAnswer)} breed is this?
+              </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {gameState.options.map((option) => (
                   <button

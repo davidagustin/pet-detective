@@ -60,15 +60,39 @@ export default function Auth({ onAuthSuccess, onClose }: AuthProps) {
     setError('')
     
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
+      // Check if Supabase is properly configured
+      if (!process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL === 'https://placeholder.supabase.co') {
+        throw new Error('Supabase is not configured. Please check your environment variables.')
+      }
+
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: window.location.origin
+          redirectTo: `${window.location.origin}/auth/callback`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          }
         }
       })
-      if (error) throw error
+
+      if (error) {
+        console.error('Google OAuth error:', error)
+        if (error.message.includes('OAuth provider not enabled')) {
+          throw new Error('Google OAuth is not enabled in your Supabase project. Please enable it in the Supabase dashboard.')
+        } else if (error.message.includes('redirect_uri_mismatch')) {
+          throw new Error('Redirect URI mismatch. Please check your Google OAuth configuration.')
+        } else {
+          throw error
+        }
+      }
+
+      // If successful, the user will be redirected to Google
+      console.log('Google OAuth initiated:', data)
+      
     } catch (error: any) {
-      setError(error.message)
+      console.error('Google sign-in error:', error)
+      setError(error.message || 'Failed to sign in with Google. Please try again.')
     } finally {
       setLoading(false)
     }

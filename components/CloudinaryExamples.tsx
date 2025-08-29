@@ -1,263 +1,91 @@
-'use client'
+'use client';
 
-import CloudinaryImage, { PetBreedImage, PetGallery } from './CloudinaryImage'
-import ImageEffects, { EffectsGallery } from './ImageEffects'
-import { CloudinaryManager } from '../lib/cloudinary'
-import { useState } from 'react'
+import React from 'react';
+import CloudinaryImage from './CloudinaryImage';
+import ImageEffects from './ImageEffects';
+import { getCloudinaryImageUrl } from '../lib/cloudinary';
 
-/**
- * Comprehensive examples of how to use the Cloudinary integration
- * This component demonstrates all the features and can be used for testing
- */
 export default function CloudinaryExamples() {
-  const [selectedBreed, setSelectedBreed] = useState('Abyssinian')
-  const [selectedImage, setSelectedImage] = useState('Abyssinian_1.jpg')
-
-  // Get available breeds for dropdown
-  const breeds = CloudinaryManager.getAvailableBreeds()
+  const samplePublicId = "pet-detective/Abyssinian_1"; // A sample image that should be uploaded
 
   return (
-    <div className="max-w-6xl mx-auto p-6 space-y-12">
-      <h1 className="text-3xl font-bold text-center text-gray-900 dark:text-gray-100">
-        Cloudinary Integration Examples
-      </h1>
+    <div className="container mx-auto p-4 space-y-8 dark:bg-gray-900 dark:text-gray-100">
+      <h2 className="text-4xl font-bold text-center mb-8">Cloudinary Image Examples</h2>
 
-      {/* Basic Image Usage */}
-      <section>
-        <h2 className="text-2xl font-semibold mb-4 text-gray-800 dark:text-gray-200">
-          1. Basic Image Usage
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <h3 className="text-lg font-medium mb-2">Standard Image</h3>
-            <CloudinaryImage
-              filename="Abyssinian_1.jpg"
-              alt="Abyssinian cat"
-              className="w-full h-64 object-cover rounded-lg shadow-lg"
-              options={{ width: 400, height: 300, crop: 'fill' }}
-            />
-          </div>
-          
-          <div>
-            <h3 className="text-lg font-medium mb-2">With Custom Options</h3>
-            <CloudinaryImage
-              filename="Abyssinian_1.jpg"
-              alt="Abyssinian cat with effects"
-              className="w-full h-64 object-cover rounded-lg shadow-lg"
-              options={{ 
-                width: 400, 
-                height: 300, 
-                crop: 'fill',
-                quality: 'auto',
-                saturation: 20,
-                contrast: 10
-              }}
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* Responsive Images */}
-      <section>
-        <h2 className="text-2xl font-semibold mb-4 text-gray-800 dark:text-gray-200">
-          2. Responsive Images
-        </h2>
-        <CloudinaryImage
-          filename="Bengal_1.jpg"
-          alt="Bengal cat - responsive"
-          className="w-full h-96 object-cover rounded-lg shadow-lg"
-          responsive={{
-            mobile: { width: 400, height: 300 },
-            tablet: { width: 600, height: 450 },
-            desktop: { width: 800, height: 600 }
-          }}
-          sizes="(max-width: 768px) 400px, (max-width: 1024px) 600px, 800px"
-        />
-      </section>
-
-      {/* Preset Effects */}
-      <section>
-        <h2 className="text-2xl font-semibold mb-4 text-gray-800 dark:text-gray-200">
-          3. Preset Effects
-        </h2>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          {['thumbnail', 'hero', 'card', 'gallery', 'blur', 'grayscale'].map((preset) => (
-            <div key={preset} className="text-center">
-              <CloudinaryImage
-                filename="Persian_1.jpg"
-                alt={`Persian cat - ${preset}`}
-                className="w-full h-32 object-cover rounded-lg shadow-md"
-                preset={preset as any}
-              />
-              <p className="mt-2 text-sm font-medium capitalize">{preset}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Pet Breed Component */}
-      <section>
-        <h2 className="text-2xl font-semibold mb-4 text-gray-800 dark:text-gray-200">
-          4. Pet Breed Component
-        </h2>
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Select Breed:
-          </label>
-          <select
-            value={selectedBreed}
-            onChange={(e) => setSelectedBreed(e.target.value)}
-            className="block w-48 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-          >
-            {breeds.slice(0, 10).map((breed) => (
-              <option key={breed} value={breed}>{breed}</option>
-            ))}
-          </select>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <PetBreedImage
-            breed={selectedBreed}
-            number={1}
-            alt={`${selectedBreed} #1`}
-            className="w-full h-48 object-cover rounded-lg shadow-lg"
-            preset="card"
-          />
-          <PetBreedImage
-            breed={selectedBreed}
-            number={2}
-            alt={`${selectedBreed} #2`}
-            className="w-full h-48 object-cover rounded-lg shadow-lg"
-            preset="card"
-          />
-          <PetBreedImage
-            breed={selectedBreed}
-            alt={`Random ${selectedBreed}`}
-            className="w-full h-48 object-cover rounded-lg shadow-lg"
-            preset="card"
+      <section className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg">
+        <h3 className="text-2xl font-semibold mb-4">1. Basic Image Display</h3>
+        <p className="mb-4 text-gray-700 dark:text-gray-300">
+          Using the <code>CloudinaryImage</code> component to display an image with specified width and height.
+        </p>
+        <div className="flex justify-center">
+          <CloudinaryImage
+            publicId={samplePublicId}
+            alt="Abyssinian Cat"
+            width={600}
+            height={400}
+            className="rounded-md shadow-md"
           />
         </div>
+        <pre className="bg-gray-100 dark:bg-gray-700 p-4 rounded-md mt-4 text-sm overflow-x-auto">
+          <code>
+            {`<CloudinaryImage\n  publicId="${samplePublicId}"\n  alt="Abyssinian Cat"\n  width={600}\n  height={400}\n/>`}
+          </code>
+        </pre>
       </section>
 
-      {/* Gallery Component */}
-      <section>
-        <h2 className="text-2xl font-semibold mb-4 text-gray-800 dark:text-gray-200">
-          5. Pet Gallery
-        </h2>
-        <PetGallery
-          breed="Siamese"
-          className="grid grid-cols-2 md:grid-cols-4 gap-4"
-          itemClassName="aspect-square"
-          options={{ width: 200, height: 200, crop: 'fill' }}
-        />
-      </section>
-
-      {/* Interactive Effects */}
-      <section>
-        <h2 className="text-2xl font-semibold mb-4 text-gray-800 dark:text-gray-200">
-          6. Interactive Image Effects
-        </h2>
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Select Image:
-          </label>
-          <select
-            value={selectedImage}
-            onChange={(e) => setSelectedImage(e.target.value)}
-            className="block w-64 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-          >
-            {['Abyssinian_1.jpg', 'Bengal_1.jpg', 'Persian_1.jpg', 'Siamese_1.jpg', 'Maine_Coon_1.jpg'].map((img) => (
-              <option key={img} value={img}>{img}</option>
-            ))}
-          </select>
+      <section className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg">
+        <h3 className="text-2xl font-semibold mb-4">2. Responsive Image with Sizes</h3>
+        <p className="mb-4 text-gray-700 dark:text-gray-300">
+          The <code>CloudinaryImage</code> component leverages Next.js Image for responsive loading.
+        </p>
+        <div className="flex justify-center">
+          <CloudinaryImage
+            publicId={samplePublicId}
+            alt="Abyssinian Cat Responsive"
+            width={1200}
+            height={800}
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            className="rounded-md shadow-md w-full h-auto"
+          />
         </div>
-        <ImageEffects
-          filename={selectedImage}
-          alt="Interactive effects demo"
-          className="max-w-2xl mx-auto"
-        />
+        <pre className="bg-gray-100 dark:bg-gray-700 p-4 rounded-md mt-4 text-sm overflow-x-auto">
+          <code>
+            {`<CloudinaryImage\n  publicId="${samplePublicId}"\n  alt="Abyssinian Cat Responsive"\n  width={1200}\n  height={800}\n  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"\n/>`}
+          </code>
+        </pre>
       </section>
 
-      {/* Effects Gallery */}
-      <section>
-        <h2 className="text-2xl font-semibold mb-4 text-gray-800 dark:text-gray-200">
-          7. Effects Gallery
-        </h2>
-        <EffectsGallery
-          filename="Ragdoll_1.jpg"
-          className="grid grid-cols-2 md:grid-cols-3 gap-4"
-        />
+      <section className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg">
+        <h3 className="text-2xl font-semibold mb-4">3. Dynamic Image Effects</h3>
+        <p className="mb-4 text-gray-700 dark:text-gray-300">
+          Use the <code>ImageEffects</code> component to apply various Cloudinary transformations on the fly.
+        </p>
+        <ImageEffects filename="Abyssinian_1.jpg" alt="Abyssinian Cat with Effects" />
+        <pre className="bg-gray-100 dark:bg-gray-700 p-4 rounded-md mt-4 text-sm overflow-x-auto">
+          <code>
+            {`<ImageEffects filename="Abyssinian_1.jpg" alt="Abyssinian Cat with Effects" />`}
+          </code>
+        </pre>
       </section>
 
-      {/* URL Examples */}
-      <section>
-        <h2 className="text-2xl font-semibold mb-4 text-gray-800 dark:text-gray-200">
-          8. URL Generation Examples
-        </h2>
-        <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg">
-          <h3 className="font-medium mb-2">Generated URLs:</h3>
-          <div className="space-y-2 text-sm font-mono">
-            <div>
-              <span className="text-blue-600">Standard:</span>
-              <br />
-              <span className="text-gray-600 break-all">
-                {CloudinaryManager.getImageUrl('Abyssinian_1.jpg')}
-              </span>
-            </div>
-            <div>
-              <span className="text-blue-600">With Effects:</span>
-              <br />
-              <span className="text-gray-600 break-all">
-                {CloudinaryManager.getImageWithEffects('Abyssinian_1.jpg', { blur: 100, grayscale: true })}
-              </span>
-            </div>
-            <div>
-              <span className="text-blue-600">Responsive Set:</span>
-              <br />
-              {Object.entries(CloudinaryManager.getResponsiveImageUrls('Abyssinian_1.jpg')).map(([size, url]) => (
-                <div key={size} className="ml-4">
-                  <span className="text-green-600">{size}:</span>
-                  <span className="text-gray-600 break-all"> {url}</span>
-                </div>
-              ))}
-            </div>
-          </div>
+      <section className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg">
+        <h3 className="text-2xl font-semibold mb-4">4. Direct URL Generation</h3>
+        <p className="mb-4 text-gray-700 dark:text-gray-300">
+          You can also generate Cloudinary URLs directly using <code>getCloudinaryImageUrl</code>.
+        </p>
+        <div className="flex justify-center mb-4">
+          <img
+            src={getCloudinaryImageUrl(samplePublicId, { width: 300, height: 300, crop: 'fill', effect: 'e_sepia' })}
+            alt="Sepia Abyssinian"
+            className="rounded-md shadow-md"
+          />
         </div>
-      </section>
-
-      {/* Performance Metrics */}
-      <section>
-        <h2 className="text-2xl font-semibold mb-4 text-gray-800 dark:text-gray-200">
-          9. Performance Benefits
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-green-50 dark:bg-green-900/20 p-6 rounded-lg">
-            <h3 className="font-semibold text-green-800 dark:text-green-400 mb-2">
-              🚀 Fast Loading
-            </h3>
-            <p className="text-sm text-green-700 dark:text-green-300">
-              Global CDN delivery with automatic format optimization (WebP, AVIF)
-            </p>
-          </div>
-          
-          <div className="bg-blue-50 dark:bg-blue-900/20 p-6 rounded-lg">
-            <h3 className="font-semibold text-blue-800 dark:text-blue-400 mb-2">
-              📱 Responsive
-            </h3>
-            <p className="text-sm text-blue-700 dark:text-blue-300">
-              Automatic responsive images with perfect sizing for any device
-            </p>
-          </div>
-          
-          <div className="bg-purple-50 dark:bg-purple-900/20 p-6 rounded-lg">
-            <h3 className="font-semibold text-purple-800 dark:text-purple-400 mb-2">
-              🎨 Dynamic
-            </h3>
-            <p className="text-sm text-purple-700 dark:text-purple-300">
-              Real-time image transformations without pre-processing
-            </p>
-          </div>
-        </div>
+        <pre className="bg-gray-100 dark:bg-gray-700 p-4 rounded-md mt-4 text-sm overflow-x-auto">
+          <code>
+            {`getCloudinaryImageUrl("${samplePublicId}", { width: 300, height: 300, crop: 'fill', effect: 'e_sepia' })`}
+          </code>
+        </pre>
       </section>
     </div>
-  )
+  );
 }

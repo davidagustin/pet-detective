@@ -249,16 +249,18 @@ All SQL files are designed to be **idempotent** - they can be run multiple times
 #### ✅ With Database Setup:
 - Complete user profiles with usernames
 - Game leaderboard functionality
-- Proper account deletion (removes all data)
+- **Complete account deletion** (removes all user data including from `auth.users`)
 - Username uniqueness validation
 - Row-level security for data protection
 
 #### ⚠️ Without Database Setup:
 - Basic authentication still works
-- Account "deletion" only signs out user
+- **Account "deletion" only signs out user** (data remains in database)
 - No persistent user profiles
 - No leaderboard functionality
 - Limited data validation
+
+> **Important**: For complete account deletion functionality, you MUST execute both `supabase/supabase_setup.sql` AND `supabase/delete_user_function.sql` in your Supabase database.
 
 ### Troubleshooting
 

@@ -220,49 +220,77 @@ export default function Settings({ user, onClose, onUserUpdate, onShowSnackbar }
     setError('')
 
     try {
-      // First, delete user data from custom tables in the correct order
-      // Delete leaderboard entries first (if table exists)
-      const { error: leaderboardError } = await supabase
-        .from('leaderboard')
-        .delete()
-        .eq('user_id', user.id)
-
-      if (leaderboardError) {
-        console.error('Error deleting leaderboard data:', leaderboardError)
-        // Don't throw error if table doesn't exist, just log it
-        if (!leaderboardError.message?.includes('does not exist') && 
-            !leaderboardError.message?.includes('schema cache')) {
-          throw new Error(`Failed to delete leaderboard data: ${leaderboardError.message}`)
-        }
-      }
-
-      // Delete profile (if table exists)
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .delete()
-        .eq('id', user.id)
-
-      if (profileError) {
-        console.error('Error deleting profile data:', profileError)
-        // Don't throw error if table doesn't exist, just log it
-        if (!profileError.message?.includes('does not exist') && 
-            !profileError.message?.includes('schema cache')) {
-          throw new Error(`Failed to delete profile data: ${profileError.message}`)
-        }
-      }
-
-      // For now, just sign out the user since the database tables may not be set up
-      // In a production environment, you would run the SQL setup files to create the necessary tables and functions
-      const { error: signOutError } = await supabase.auth.signOut()
+      // Try to use the delete_user_account RPC function first (most complete deletion)
+      const { data: rpcData, error: rpcError } = await supabase.rpc('delete_user_account')
       
-      if (signOutError) {
-        console.error('Error signing out:', signOutError)
-        throw new Error(`Failed to sign out: ${signOutError.message}`)
-      }
-      
-      // Show appropriate message based on whether tables exist
-      if (onShowSnackbar) {
-        onShowSnackbar('Account signed out successfully. Note: Complete account deletion requires database setup.', 'success')
+      if (rpcError) {
+        console.error('RPC delete_user_account error:', rpcError)
+        
+        // If RPC function doesn't exist, fall back to manual deletion
+        if (rpcError.message?.includes('function delete_user_account') || 
+            rpcError.message?.includes('does not exist')) {
+          
+          console.log('RPC function not found, attempting manual deletion...')
+          
+          // Manual deletion fallback - delete from custom tables first
+          try {
+            const { error: leaderboardError } = await supabase
+              .from('leaderboard')
+              .delete()
+              .eq('user_id', user.id)
+
+            if (leaderboardError && 
+                !leaderboardError.message?.includes('does not exist') && 
+                !leaderboardError.message?.includes('schema cache')) {
+              console.error('Error deleting leaderboard data:', leaderboardError)
+            }
+          } catch (e) {
+            console.log('Leaderboard table not found, skipping...')
+          }
+
+          try {
+            const { error: profileError } = await supabase
+              .from('profiles')
+              .delete()
+              .eq('id', user.id)
+
+            if (profileError && 
+                !profileError.message?.includes('does not exist') && 
+                !profileError.message?.includes('schema cache')) {
+              console.error('Error deleting profile data:', profileError)
+            }
+          } catch (e) {
+            console.log('Profiles table not found, skipping...')
+          }
+
+          // Sign out the user since we can't delete from auth.users without the RPC function
+          const { error: signOutError } = await supabase.auth.signOut()
+          
+          if (signOutError) {
+            throw new Error(`Failed to sign out: ${signOutError.message}`)
+          }
+          
+          if (onShowSnackbar) {
+            onShowSnackbar('Account signed out successfully. Complete account deletion requires database setup (see README.md).', 'warning')
+          }
+        } else {
+          throw new Error(`Account deletion failed: ${rpcError.message}`)
+        }
+      } else {
+        // RPC function succeeded - complete deletion including auth.users
+        console.log('Account deletion successful:', rpcData)
+        
+        // Sign out the user after successful deletion
+        const { error: signOutError } = await supabase.auth.signOut()
+        
+        if (signOutError) {
+          console.error('Sign out error after deletion:', signOutError)
+          // Don't throw error here since the account was already deleted
+        }
+        
+        if (onShowSnackbar) {
+          onShowSnackbar('Account deleted successfully! All your data has been removed.', 'success')
+        }
       }
       
       onClose()

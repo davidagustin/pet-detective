@@ -180,24 +180,60 @@ export default function Settings({ user, onClose, onUserUpdate, onShowSnackbar }
     setError('')
     setSuccess('')
 
+    // Validate all required fields
+    if (!currentPassword) {
+      setError('Current password is required')
+      setLoading(false)
+      return
+    }
+
+    if (!newPassword) {
+      setError('New password is required')
+      setLoading(false)
+      return
+    }
+
     if (newPassword !== confirmPassword) {
-      setError('Passwords do not match')
+      setError('New passwords do not match')
       setLoading(false)
       return
     }
 
     if (!passwordStrength.isValid) {
-      setError('Password does not meet security requirements')
+      setError('New password does not meet security requirements')
+      setLoading(false)
+      return
+    }
+
+    if (currentPassword === newPassword) {
+      setError('New password must be different from current password')
       setLoading(false)
       return
     }
 
     try {
-      const { error } = await supabase.auth.updateUser({
+      // First, verify the current password by attempting to sign in with it
+      const { error: verificationError } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password: currentPassword
+      })
+
+      if (verificationError) {
+        if (verificationError.message?.includes('Invalid login credentials')) {
+          setError('Current password is incorrect')
+        } else {
+          setError('Failed to verify current password: ' + verificationError.message)
+        }
+        setLoading(false)
+        return
+      }
+
+      // If verification successful, update to new password
+      const { error: updateError } = await supabase.auth.updateUser({
         password: newPassword
       })
 
-      if (error) throw error
+      if (updateError) throw updateError
 
       setSuccess('Password updated successfully!')
       setCurrentPassword('')

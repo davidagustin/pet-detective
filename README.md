@@ -11,7 +11,7 @@
 
 **An intelligent pet classification system with interactive gaming, powered by deep learning and modern web technologies.**
 
-[🚀 Quick Start](#-quick-start) • [🎮 Features](#-features) • [🛠️ Setup](#️-setup) • [📚 Documentation](#-documentation) • [🤝 Contributing](#-contributing)
+[🚀 Quick Start](#-quick-start) • [🎮 Features](#-features) • [🛠️ Setup](#️-setup) • [🗄️ Database Setup](#️-database-setup) • [📚 Documentation](#-documentation) • [🤝 Contributing](#-contributing)
 
 </div>
 
@@ -160,38 +160,8 @@ Pet Detective is a comprehensive AI-powered platform that combines deep learning
    - Enable Google provider in Supabase Authentication > Providers
    - Add redirect URIs for your domain
 
-5. **Set Up Database**
-   Run this SQL in your Supabase SQL Editor:
-   ```sql
-   -- Create leaderboard table for Pet Detective game
-   CREATE TABLE IF NOT EXISTS leaderboard (
-       id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-       user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
-       username TEXT NOT NULL,
-       score INTEGER DEFAULT 0,
-       total_questions INTEGER DEFAULT 0,
-       accuracy DECIMAL(5,2) DEFAULT 0.00,
-       created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-       updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-   );
-   
-   -- Create indexes for performance
-   CREATE INDEX IF NOT EXISTS idx_leaderboard_score ON leaderboard(score DESC);
-   CREATE INDEX IF NOT EXISTS idx_leaderboard_user_id ON leaderboard(user_id);
-   
-   -- Enable Row Level Security
-   ALTER TABLE leaderboard ENABLE ROW LEVEL SECURITY;
-   
-   -- Create security policies
-   CREATE POLICY "Allow public read access to leaderboard" ON leaderboard
-       FOR SELECT USING (true);
-   
-   CREATE POLICY "Allow users to insert their own scores" ON leaderboard
-       FOR INSERT WITH CHECK (auth.uid() = user_id);
-   
-   CREATE POLICY "Allow users to update their own scores" ON leaderboard
-       FOR UPDATE USING (auth.uid() = user_id);
-   ```
+5. **Set Up Database Schema**
+   See the [Database Setup](#-database-setup) section below for comprehensive database configuration.
 
 ### Pet Images Setup
 
@@ -211,6 +181,117 @@ The quiz uses images from the `images/` folder at the project root. Images shoul
 
 🐕 **Dog Breeds (25 total)**:
 - American Bulldog, American Pit Bull Terrier, Basset Hound, Beagle, Boxer, Chihuahua, English Cocker Spaniel, English Setter, German Shorthaired, Great Pyrenees, Havanese, Japanese Chin, Keeshond, Leonberger, Miniature Pinscher, Newfoundland, Pomeranian, Pug, Saint Bernard, Samoyed, Scottish Terrier, Shiba Inu, Staffordshire Bull Terrier, Wheaten Terrier, Yorkshire Terrier
+
+---
+
+## 🗄️ Database Setup
+
+This section explains how to set up the required database tables and functions for the Pet Detective application.
+
+### Required SQL Files
+
+Execute these SQL files in your Supabase dashboard in the following order:
+
+#### 1. Main Database Setup
+**File**: `supabase/supabase_setup.sql`
+
+This creates:
+- `profiles` table for user management
+- `leaderboard` table for game scores
+- Row Level Security (RLS) policies
+- Triggers for automatic profile creation
+
+#### 2. Pet Images Schema
+**File**: `supabase/pet_images_schema.sql`
+
+This creates:
+- `pet_images` table for storing pet image metadata
+- Indexes for faster queries
+- RLS policies for image access
+
+#### 3. User Deletion Function
+**File**: `supabase/delete_user_function.sql`
+
+This creates:
+- `delete_user_account()` function with elevated privileges
+- Proper permissions for authenticated users
+- Complete user data deletion capability
+
+### How to Execute SQL Files
+
+1. **Open Supabase Dashboard**
+   - Go to your Supabase project dashboard
+   - Navigate to "SQL Editor"
+
+2. **Execute Each File**
+   - Copy the contents of each SQL file
+   - Paste into the SQL editor
+   - Click "Run" to execute
+   - **Note**: Files can be run multiple times safely (they handle existing objects)
+
+3. **Verify Setup**
+   - Check "Table Editor" to see the created tables
+   - Verify RLS policies are enabled
+   - Test the delete function works
+
+### Safe Re-execution
+
+All SQL files are designed to be **idempotent** - they can be run multiple times without errors:
+
+- **Tables**: Use `CREATE TABLE IF NOT EXISTS`
+- **Policies**: Drop existing policies before creating new ones
+- **Functions**: Use `CREATE OR REPLACE FUNCTION`
+- **Triggers**: Drop existing triggers before creating new ones
+- **Sample Data**: Clear and re-insert sample data for consistency
+
+### Features Enabled After Setup
+
+#### ✅ With Database Setup:
+- Complete user profiles with usernames
+- Game leaderboard functionality
+- Proper account deletion (removes all data)
+- Username uniqueness validation
+- Row-level security for data protection
+
+#### ⚠️ Without Database Setup:
+- Basic authentication still works
+- Account "deletion" only signs out user
+- No persistent user profiles
+- No leaderboard functionality
+- Limited data validation
+
+### Troubleshooting
+
+#### "Table does not exist" errors:
+- Execute `supabase/supabase_setup.sql`
+- Check table creation was successful
+
+#### "Function does not exist" errors:
+- Execute `supabase/delete_user_function.sql`
+- Verify function permissions are granted
+
+#### RLS policy errors:
+- Ensure RLS is enabled on all tables
+- Check policy definitions match user permissions
+
+### Development vs Production
+
+#### Development:
+- Can run without full database setup
+- Limited functionality but app won't crash
+- Graceful degradation for missing features
+
+#### Production:
+- **Must** execute all SQL files
+- Full functionality requires complete database setup
+- Users expect all features to work properly
+
+### Security Notes
+
+- The `delete_user_account()` function uses `SECURITY DEFINER`
+- This allows it to delete from `auth.users` table
+- Only authenticated users can execute the function
+- Function validates user identity before deletion
 
 ---
 

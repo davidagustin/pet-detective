@@ -68,9 +68,11 @@ ENV/
 *.pth
 *.pt
 *.pkl
+*.safetensors
 models/*.pth
 models/*.pt
 models/*.pkl
+models/*.safetensors
 api/*.pth
 api/*.pt
 api/*.pkl

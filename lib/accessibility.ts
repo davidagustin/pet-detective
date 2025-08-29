@@ -67,71 +67,44 @@ export const accessibilityUtils = {
     }, [])
   },
 
-  // High contrast mode
-  toggleHighContrast: () => {
-    const html = document.documentElement
-    const isHighContrast = html.classList.contains('high-contrast')
-    
-    if (isHighContrast) {
-      html.classList.remove('high-contrast')
-      localStorage.setItem('highContrast', 'false')
-      accessibilityUtils.announce('High contrast mode disabled')
-    } else {
-      html.classList.add('high-contrast')
-      localStorage.setItem('highContrast', 'true')
-      accessibilityUtils.announce('High contrast mode enabled')
-    }
-  },
 
-  // Reduced motion
-  toggleReducedMotion: () => {
-    const html = document.documentElement
-    const isReducedMotion = html.classList.contains('reduce-motion')
-    
-    if (isReducedMotion) {
-      html.classList.remove('reduce-motion')
-      localStorage.setItem('reducedMotion', 'false')
-      accessibilityUtils.announce('Reduced motion disabled')
-    } else {
-      html.classList.add('reduce-motion')
-      localStorage.setItem('reducedMotion', 'true')
-      accessibilityUtils.announce('Reduced motion enabled')
-    }
-  },
 }
 
 // Custom hooks for accessibility
 export const useAccessibility = () => {
-  const [isHighContrast, setIsHighContrast] = useState(false)
-  const [isReducedMotion, setIsReducedMotion] = useState(false)
+  const [isDarkMode, setIsDarkMode] = useState(false)
 
   useEffect(() => {
-    // Load accessibility preferences from localStorage
-    const highContrast = localStorage.getItem('highContrast') === 'true'
-    const reducedMotion = localStorage.getItem('reducedMotion') === 'true'
+    // Load dark mode preference from localStorage
+    const darkMode = localStorage.getItem('darkMode') === 'true'
     
-    setIsHighContrast(highContrast)
-    setIsReducedMotion(reducedMotion)
+    setIsDarkMode(darkMode)
     
-    if (highContrast) {
-      document.documentElement.classList.add('high-contrast')
-    }
-    if (reducedMotion) {
-      document.documentElement.classList.add('reduce-motion')
+    if (darkMode) {
+      document.documentElement.classList.add('dark')
+    } else {
+      document.documentElement.classList.remove('dark')
     }
   }, [])
 
+  const toggleDarkMode = () => {
+    const newDarkMode = !isDarkMode
+    setIsDarkMode(newDarkMode)
+    
+    if (newDarkMode) {
+      document.documentElement.classList.add('dark')
+      localStorage.setItem('darkMode', 'true')
+    } else {
+      document.documentElement.classList.remove('dark')
+      localStorage.setItem('darkMode', 'false')
+    }
+    
+    accessibilityUtils.announce(`Dark mode ${newDarkMode ? 'enabled' : 'disabled'}`)
+  }
+
   return {
-    isHighContrast,
-    isReducedMotion,
-    toggleHighContrast: () => {
-      accessibilityUtils.toggleHighContrast()
-      setIsHighContrast(!isHighContrast)
-    },
-    toggleReducedMotion: () => {
-      accessibilityUtils.toggleReducedMotion()
-      setIsReducedMotion(!isReducedMotion)
-    },
+    isDarkMode,
+    toggleDarkMode,
   }
 }
 

@@ -4,7 +4,7 @@ export const config = {
   api: {
     baseUrl: process.env.NODE_ENV === 'production' 
       ? '' // Use relative URLs in production (same domain)
-      : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5328'),
+      : 'http://127.0.0.1:5328', // Use 127.0.0.1 to match Flask server
     timeout: 30000, // 30 seconds
     retries: 3,
   },

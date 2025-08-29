@@ -9,6 +9,10 @@ interface GameState {
   correctAnswer: string
   aiPrediction: string
   aiConfidence: number
+  imageMetadata?: {
+    animal_type: 'cat' | 'dog'
+    filename: string
+  }
 }
 
 interface EnhancedPetGameProps {
@@ -31,15 +35,7 @@ export default function EnhancedPetGame({ selectedModel, selectedModelName, user
   const [timeLeft, setTimeLeft] = useState(30)
   const [isTimerActive, setIsTimerActive] = useState(false)
 
-  // Helper function to determine pet type
-  const getPetType = (breed: string): 'cat' | 'dog' => {
-    const catBreeds = [
-      'Abyssinian', 'Bengal', 'Birman', 'Bombay', 'British Shorthair', 
-      'Egyptian Mau', 'Maine Coon', 'Persian', 'Ragdoll', 'Russian Blue', 
-      'Siamese', 'Sphynx'
-    ]
-    return catBreeds.includes(breed) ? 'cat' : 'dog'
-  }
+
 
   useEffect(() => {
     let timer: NodeJS.Timeout
@@ -148,18 +144,18 @@ export default function EnhancedPetGame({ selectedModel, selectedModelName, user
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-semibold text-gray-800">🎮 Pet Detective Game</h2>
+        <h2 className="text-2xl font-semibold text-gray-800 dark:text-gray-200">🎮 Pet Detective Game</h2>
         <div className="text-right">
-          <div className="text-sm text-gray-600">Score: <span className="font-bold text-blue-600">{score}</span></div>
-          <div className="text-sm text-gray-600">Streak: <span className="font-bold text-green-600">{streak}</span></div>
+          <div className="text-sm text-gray-600 dark:text-gray-400">Score: <span className="font-bold text-blue-600">{score}</span></div>
+          <div className="text-sm text-gray-600 dark:text-gray-400">Streak: <span className="font-bold text-green-600">{streak}</span></div>
         </div>
       </div>
 
       {/* Game Mode Selection */}
       <div className="mb-6">
-        <label className="block text-sm font-medium text-gray-700 mb-2">Game Mode:</label>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Game Mode:</label>
         <div className="flex space-x-2">
           {(['easy', 'medium', 'hard'] as const).map((mode) => (
             <button
@@ -182,8 +178,8 @@ export default function EnhancedPetGame({ selectedModel, selectedModelName, user
       {!gameState ? (
         <div className="text-center py-8">
           <div className="text-6xl mb-4">🐕</div>
-          <h3 className="text-xl font-semibold text-gray-800 mb-2">Ready to Play?</h3>
-          <p className="text-gray-600 mb-6">Test your pet breed knowledge against our AI!</p>
+          <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-2">Ready to Play?</h3>
+          <p className="text-gray-600 dark:text-gray-400 mb-6">Test your pet breed knowledge against our AI!</p>
           <button
             onClick={startNewGame}
             disabled={isLoading}
@@ -194,14 +190,35 @@ export default function EnhancedPetGame({ selectedModel, selectedModelName, user
         </div>
       ) : (
         <div className="space-y-6">
-          {/* Timer and AI Info */}
-          <div className="flex justify-between items-center">
-            <div className="text-sm text-gray-600">
-              AI Model: <span className="font-medium">{selectedModelName || selectedModel.toUpperCase()}</span>
-            </div>
-            <div className={`text-lg font-bold ${getTimeColor()}`}>
+          {/* Timer - Prominent Center Position */}
+          <div className="text-center mb-4">
+            <div className={`inline-flex items-center justify-center px-4 py-2 rounded-full text-2xl font-bold ${getTimeColor()} bg-white dark:bg-gray-800 shadow-lg border-2 ${
+              timeLeft > 20 ? 'border-green-500' : timeLeft > 10 ? 'border-yellow-500' : 'border-red-500'
+            }`}>
               ⏱️ {timeLeft}s
             </div>
+          </div>
+
+          {/* AI Info and Back Button */}
+          <div className="flex justify-between items-center">
+            <div className="text-sm text-gray-600 dark:text-gray-400">
+              AI Model: <span className="font-medium">{selectedModelName || selectedModel.toUpperCase()}</span>
+            </div>
+            <button
+              onClick={() => {
+                setGameState(null)
+                setSelectedAnswer(null)
+                setIsCorrect(null)
+                setShowResults(false)
+                setIsTimerActive(false)
+                setTimeLeft(30)
+                // Reset to initial state but keep score and streak
+              }}
+              className="bg-gray-500 hover:bg-gray-600 text-white text-sm font-medium py-1 px-3 rounded-lg transition-colors"
+              title="Back to start screen"
+            >
+              🏠 Back
+            </button>
           </div>
 
           {/* Game Image */}
@@ -212,9 +229,9 @@ export default function EnhancedPetGame({ selectedModel, selectedModelName, user
               className="w-full h-80 object-cover rounded-lg shadow-md"
             />
             {/* Pet Type Indicator */}
-            <div className="absolute top-4 left-4 bg-white bg-opacity-90 px-3 py-1 rounded-full shadow-md">
-              <span className="text-sm font-medium text-gray-700">
-                {getPetType(gameState.correctAnswer) === 'cat' ? '🐱 Cat Breeds' : '🐕 Dog Breeds'}
+            <div className="absolute top-4 left-4 bg-white dark:bg-gray-700 bg-opacity-90 dark:bg-opacity-90 px-3 py-1 rounded-full shadow-md">
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                {gameState.imageMetadata?.animal_type === 'cat' ? '🐱 Cat Breeds' : '🐕 Dog Breeds'}
               </span>
             </div>
             {showResults && (
@@ -237,8 +254,8 @@ export default function EnhancedPetGame({ selectedModel, selectedModelName, user
           {/* Answer Options */}
           {!showResults && (
             <div className="space-y-3">
-              <h3 className="font-semibold text-gray-800 text-center">
-                What {getPetType(gameState.correctAnswer)} breed is this?
+              <h3 className="font-semibold text-gray-800 dark:text-gray-200 text-center">
+                What {gameState.imageMetadata?.animal_type || 'pet'} breed is this?
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {gameState.options.map((option) => (
@@ -246,10 +263,10 @@ export default function EnhancedPetGame({ selectedModel, selectedModelName, user
                     key={option}
                     onClick={() => handleAnswerSelect(option)}
                     disabled={!isTimerActive}
-                    className={`p-4 text-left rounded-lg border-2 transition-all ${
+                    className={`p-4 text-left rounded-lg border-2 transition-all text-gray-800 dark:text-gray-200 ${
                       selectedAnswer === option
-                        ? 'border-blue-500 bg-blue-50 shadow-md'
-                        : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
+                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900 shadow-md'
+                        : 'border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 hover:border-gray-300 dark:hover:border-gray-500 hover:shadow-sm'
                     } ${!isTimerActive ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
                     {option}
@@ -274,7 +291,7 @@ export default function EnhancedPetGame({ selectedModel, selectedModelName, user
             {showResults && (
               <button
                 onClick={startNewGame}
-                className="flex-1 bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-4 rounded-lg transition-colors"
+                className="bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-4 rounded-lg transition-colors"
               >
                 Next Question
               </button>
@@ -283,24 +300,24 @@ export default function EnhancedPetGame({ selectedModel, selectedModelName, user
 
           {/* Results Display */}
           {showResults && (
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <h4 className="font-semibold text-gray-800 mb-2">Round Results:</h4>
+            <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+              <h4 className="font-semibold text-gray-800 dark:text-gray-200 mb-2">Round Results:</h4>
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <span className="text-gray-600">Your Answer:</span>
-                  <div className="font-medium">{selectedAnswer}</div>
+                  <span className="text-gray-600 dark:text-gray-400">Your Answer:</span>
+                  <div className="font-medium text-gray-800 dark:text-gray-200">{selectedAnswer}</div>
                 </div>
                 <div>
-                  <span className="text-gray-600">Correct Answer:</span>
-                  <div className="font-medium text-green-600">{gameState.correctAnswer}</div>
+                  <span className="text-gray-600 dark:text-gray-400">Correct Answer:</span>
+                  <div className="font-medium text-green-600 dark:text-green-400">{gameState.correctAnswer}</div>
                 </div>
                 <div>
-                  <span className="text-gray-600">AI Prediction:</span>
-                  <div className="font-medium">{gameState.aiPrediction}</div>
+                  <span className="text-gray-600 dark:text-gray-400">AI Prediction:</span>
+                  <div className="font-medium text-gray-800 dark:text-gray-200">{gameState.aiPrediction}</div>
                 </div>
                 <div>
-                  <span className="text-gray-600">AI Confidence:</span>
-                  <div className="font-medium">{(gameState.aiConfidence * 100).toFixed(1)}%</div>
+                  <span className="text-gray-600 dark:text-gray-400">AI Confidence:</span>
+                  <div className="font-medium text-gray-800 dark:text-gray-200">{(gameState.aiConfidence * 100).toFixed(1)}%</div>
                 </div>
               </div>
             </div>
@@ -312,8 +329,8 @@ export default function EnhancedPetGame({ selectedModel, selectedModelName, user
       <div className="mt-6 pt-4 border-t border-gray-200">
         <div className="grid grid-cols-3 gap-4 text-center text-sm">
           <div>
-            <div className="text-gray-600">Questions</div>
-            <div className="font-bold text-gray-800">{totalQuestions}</div>
+            <div className="text-gray-600 dark:text-gray-400">Questions</div>
+            <div className="font-bold text-gray-800 dark:text-gray-200">{totalQuestions}</div>
           </div>
           <div>
             <div className="text-gray-600">Accuracy</div>

@@ -37,7 +37,7 @@ class SecureAPIClient {
         ...options,
         headers,
         signal: controller.signal,
-        credentials: 'include', // Include cookies for CSRF protection
+        credentials: 'same-origin', // Only include cookies for same-origin requests
       })
 
       clearTimeout(timeoutId)

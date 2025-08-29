@@ -7,15 +7,27 @@ import time
 from datetime import datetime
 from werkzeug.utils import secure_filename
 import hashlib
+from dotenv import load_dotenv
+
+# Load environment variables from .env.local
+load_dotenv('../.env.local')
 
 from pet_classifier import PetClassifier
 from train_model import train_pet_classifier
 from model_manager import ModelManager
 from pet_segmentation import get_segmentation_model
 from model_metadata import get_all_models, get_model_metadata, get_model_stats, update_model_usage
+from database_game import database_game_manager
+import asyncio
 
 app = Flask(__name__)
-CORS(app)
+# Configure CORS with explicit credential support
+CORS(app, 
+     origins=["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:3001"],
+     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+     allow_headers=["Content-Type", "Authorization", "X-Requested-With", "X-CSRF-Token"],
+     supports_credentials=True,
+     expose_headers=["Content-Range", "X-Content-Range"])
 
 @app.route('/api/health', methods=['GET'])
 def health_check():
@@ -37,11 +49,20 @@ SUPABASE_URL = os.getenv('SUPABASE_URL')
 SUPABASE_SERVICE_ROLE_KEY = os.getenv('SUPABASE_SERVICE_ROLE_KEY')
 
 # Create models directory if it doesn't exist
-os.makedirs('models', exist_ok=True)
+os.makedirs('../models', exist_ok=True)
 
 def scan_models_directory():
     """Scan models directory for available trained models"""
     available_models = {}
+    
+    # Debug: Print current working directory and models path
+    print(f"Current working directory: {os.getcwd()}")
+    models_path = '../models'
+    print(f"Looking for models in: {os.path.abspath(models_path)}")
+    print(f"Models directory exists: {os.path.exists(models_path)}")
+    if os.path.exists(models_path):
+        print(f"Files in models directory: {os.listdir(models_path)}")
+    
     model_types = {
         'resnet': {
             'name': 'ResNet-50',
@@ -75,10 +96,10 @@ def scan_models_directory():
         }
     }
     
-    if os.path.exists('models'):
-        for filename in os.listdir('models'):
-            if filename.endswith(('.pth', '.safetensors')):
-                filepath = os.path.join('models', filename)
+    if os.path.exists(models_path):
+        for filename in os.listdir(models_path):
+            if (filename.endswith(('.pth', '.safetensors')) or '.safetensors.' in filename) and not filename.endswith('.json'):
+                filepath = os.path.join(models_path, filename)
                 stat = os.stat(filepath)
                 
                 # Try to determine model type from filename
@@ -91,17 +112,47 @@ def scan_models_directory():
                     model_type = 'mobilenet'
                 
                 # Determine format
-                file_format = 'safetensors' if filename.endswith('.safetensors') else 'pytorch'
+                file_format = 'safetensors' if ('.safetensors' in filename) else 'pytorch'
                 
-                available_models[filename] = {
+                # Try to load metadata from JSON file if it exists
+                json_filename = f"{filename}.json"
+                json_filepath = os.path.join(models_path, json_filename)
+                metadata = None
+                if os.path.exists(json_filepath):
+                    try:
+                        with open(json_filepath, 'r') as f:
+                            metadata = json.load(f)
+                    except Exception as e:
+                        print(f"Warning: Could not load metadata for {filename}: {e}")
+                
+                model_info = {
                     'name': filename,
                     'type': model_type,
                     'format': file_format,
                     'path': filepath,
                     'size_mb': round(stat.st_size / (1024 * 1024), 2),
                     'created': int(stat.st_ctime),
-                    'modified': int(stat.st_mtime)
+                    'modified': int(stat.st_mtime),
+                    'has_metadata': metadata is not None
                 }
+                
+                # Add metadata if available
+                if metadata and 'model_info' in metadata:
+                    model_info.update({
+                        'accuracy': metadata['model_info'].get('performance_metrics', {}).get('accuracy', 'Unknown'),
+                        'training_epochs': metadata['model_info'].get('training_info', {}).get('epochs_trained', 'Unknown'),
+                        'description': metadata['model_info'].get('description', 'No description available'),
+                        'version': metadata['model_info'].get('version', 'Unknown')
+                    })
+                else:
+                    model_info.update({
+                        'accuracy': 'Unknown',
+                        'training_epochs': 'Unknown', 
+                        'description': 'No metadata available',
+                        'version': 'Unknown'
+                    })
+                
+                available_models[filename] = model_info
     
     return available_models, model_types
 
@@ -160,25 +211,50 @@ def start_game():
         model_type = data.get('model_type', 'resnet')
         model_name = data.get('model_name', None)
         game_mode = data.get('game_mode', 'medium')
+        animal_type = data.get('animal_type', None)  # Optional filter for dogs/cats only
         
-        # Get or create classifier with default safetensors model
-        model_key = f"{model_type}_{model_name}" if model_name else model_type
-        if model_key not in classifiers:
-            model_path = None
-            if model_name:
-                model_path = os.path.join('models', model_name)
-            else:
-                # Use the existing safetensors model by default
-                default_model_path = os.path.join('..', 'models', 'resnet_model.safetensors')
-                if os.path.exists(default_model_path):
-                    model_path = default_model_path
+        # Try to use database-driven game first
+        try:
+            # Create a new event loop for the async function
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            game_data = loop.run_until_complete(
+                database_game_manager.generate_game_question(game_mode=game_mode, animal_type=animal_type)
+            )
+            loop.close()
             
-            classifiers[model_key] = PetClassifier(model_type=model_type, model_path=model_path)
-        
-        classifier = classifiers[model_key]
-        
-        # Generate game question
-        game_data = classifier.generate_game_question(game_mode=game_mode)
+            # Add AI prediction using the classifier if we have one
+            model_key = f"{model_type}_{model_name}" if model_name else model_type
+            if model_key in classifiers:
+                classifier = classifiers[model_key]
+                # Note: We can't easily predict from URL, so we'll trust the database
+                # In production, you might want to download and predict
+                pass
+            
+            return jsonify(game_data)
+            
+        except Exception as db_error:
+            print(f"Database game generation failed: {db_error}")
+            # Fall back to old filesystem-based method
+            
+            # Get or create classifier with default safetensors model
+            model_key = f"{model_type}_{model_name}" if model_name else model_type
+            if model_key not in classifiers:
+                model_path = None
+                if model_name:
+                    model_path = os.path.join('models', model_name)
+                else:
+                    # Use the existing safetensors model by default
+                    default_model_path = os.path.join('..', 'models', 'resnet_model.safetensors')
+                    if os.path.exists(default_model_path):
+                        model_path = default_model_path
+                
+                classifiers[model_key] = PetClassifier(model_type=model_type, model_path=model_path)
+            
+            classifier = classifiers[model_key]
+            
+            # Generate game question using old method
+            game_data = classifier.generate_game_question(game_mode=game_mode)
         
         # Add caching headers for game data
         response = jsonify(game_data)
@@ -451,7 +527,7 @@ def serve_image(filename):
             return jsonify({'error': 'Invalid filename'}), 400
         
         # Add caching headers for better performance
-        response = send_from_directory('images', filename)
+        response = send_from_directory('../images', filename)
         response.headers['Cache-Control'] = 'public, max-age=31536000'  # 1 year cache
         response.headers['ETag'] = hashlib.md5(filename.encode()).hexdigest()
         return response

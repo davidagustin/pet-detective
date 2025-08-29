@@ -71,11 +71,11 @@ export default function DynamicModelSelector({ selectedModel, onModelSelect }: D
 
   if (loading) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h2 className="text-2xl font-semibold text-gray-800 mb-4">🤖 Model Selection</h2>
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+        <h2 className="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-4">🤖 Model Selection</h2>
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
-          <p className="text-gray-600 mt-2">Loading available models...</p>
+          <p className="text-gray-600 dark:text-gray-400 mt-2">Loading available models...</p>
         </div>
       </div>
     )
@@ -83,8 +83,8 @@ export default function DynamicModelSelector({ selectedModel, onModelSelect }: D
 
   if (error) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h2 className="text-2xl font-semibold text-gray-800 mb-4">🤖 Model Selection</h2>
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+        <h2 className="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-4">🤖 Model Selection</h2>
         <div className="text-red-600 text-center">{error}</div>
       </div>
     )
@@ -93,9 +93,9 @@ export default function DynamicModelSelector({ selectedModel, onModelSelect }: D
   const filteredModels = getFilteredModels()
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
-        <h2 className="text-2xl font-semibold text-gray-800 mb-4 sm:mb-0">
+        <h2 className="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-4 sm:mb-0">
           🤖 Model Selection
         </h2>
         
@@ -104,7 +104,7 @@ export default function DynamicModelSelector({ selectedModel, onModelSelect }: D
           <select
             value={selectedModelType}
             onChange={(e) => setSelectedModelType(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="all">All Types</option>
             <option value="resnet">ResNet</option>
@@ -118,11 +118,11 @@ export default function DynamicModelSelector({ selectedModel, onModelSelect }: D
       {filteredModels.length === 0 ? (
         <div className="text-center py-12">
           <div className="text-6xl mb-4">📁</div>
-          <h3 className="text-xl font-semibold text-gray-800 mb-2">No Models Found</h3>
-          <p className="text-gray-600">
+          <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-2">No Models Found</h3>
+          <p className="text-gray-600 dark:text-gray-300">
             No trained models found in the models directory.
           </p>
-          <p className="text-gray-500 text-sm mt-2">
+          <p className="text-gray-500 dark:text-gray-400 text-sm mt-2">
             Train a model first to see it appear here.
           </p>
         </div>
@@ -132,10 +132,10 @@ export default function DynamicModelSelector({ selectedModel, onModelSelect }: D
             {filteredModels.map((model) => (
               <div
                 key={model.name}
-                className={`border rounded-lg p-4 cursor-pointer transition-all ${
+                className={`border rounded-lg p-4 cursor-pointer transition-all bg-white dark:bg-gray-700 ${
                   selectedModel === model.name
-                    ? 'border-blue-500 bg-blue-50 shadow-md'
-                    : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
+                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 shadow-md'
+                    : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 hover:shadow-sm'
                 }`}
                 onClick={() => handleModelSelect(model.name, model.type)}
               >
@@ -148,7 +148,10 @@ export default function DynamicModelSelector({ selectedModel, onModelSelect }: D
                       model.type === 'mobilenet' ? 'bg-purple-500' :
                       'bg-gray-500'
                     }`}></div>
-                    <span className="font-semibold text-gray-800">
+                    <span 
+                      className="font-semibold text-gray-800 dark:text-gray-100 truncate max-w-[140px]"
+                      title={model.name}
+                    >
                       {model.name}
                     </span>
                   </div>
@@ -160,23 +163,23 @@ export default function DynamicModelSelector({ selectedModel, onModelSelect }: D
                 {/* Model Info */}
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Type:</span>
-                    <span className="font-medium capitalize">{model.type}</span>
+                    <span className="text-gray-600 dark:text-gray-300">Type:</span>
+                    <span className="font-medium capitalize text-gray-900 dark:text-gray-100">{model.type}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Size:</span>
-                    <span className="font-medium">{model.size_mb} MB</span>
+                    <span className="text-gray-600 dark:text-gray-300">Size:</span>
+                    <span className="font-medium text-gray-900 dark:text-gray-100">{model.size_mb} MB</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Created:</span>
-                    <span className="font-medium">{formatDate(model.created)}</span>
+                    <span className="text-gray-600 dark:text-gray-300">Created:</span>
+                    <span className="font-medium text-gray-900 dark:text-gray-100">{formatDate(model.created)}</span>
                   </div>
                 </div>
 
                 {/* Model Type Info */}
                 {modelTypes[model.type] && (
-                  <div className="mt-3 pt-3 border-t border-gray-200">
-                    <div className="text-xs text-gray-600 space-y-1">
+                  <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+                    <div className="text-xs text-gray-600 dark:text-gray-300 space-y-1">
                       <div><strong>Architecture:</strong> {modelTypes[model.type].architecture}</div>
                       <div><strong>Parameters:</strong> {modelTypes[model.type].parameters}</div>
                       <div><strong>Expected Accuracy:</strong> {modelTypes[model.type].accuracy}</div>
@@ -190,24 +193,24 @@ export default function DynamicModelSelector({ selectedModel, onModelSelect }: D
 
           {/* Selected Model Info */}
           {selectedModel && availableModels[selectedModel] && (
-            <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <h3 className="font-semibold text-blue-800 mb-2">Selected Model</h3>
+            <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg">
+              <h3 className="font-semibold text-blue-800 dark:text-blue-300 mb-2">Selected Model</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="text-gray-600">Name:</span>
-                  <span className="font-medium ml-2">{availableModels[selectedModel].name}</span>
+                <div className="col-span-1 md:col-span-2">
+                  <span className="text-gray-600 dark:text-gray-300">Name:</span>
+                  <span className="font-medium ml-2 break-words text-gray-900 dark:text-gray-100">{availableModels[selectedModel].name}</span>
                 </div>
                 <div>
-                  <span className="text-gray-600">Type:</span>
-                  <span className="font-medium ml-2 capitalize">{availableModels[selectedModel].type}</span>
+                  <span className="text-gray-600 dark:text-gray-300">Type:</span>
+                  <span className="font-medium ml-2 capitalize text-gray-900 dark:text-gray-100">{availableModels[selectedModel].type}</span>
                 </div>
                 <div>
-                  <span className="text-gray-600">Size:</span>
-                  <span className="font-medium ml-2">{availableModels[selectedModel].size_mb} MB</span>
+                  <span className="text-gray-600 dark:text-gray-300">Size:</span>
+                  <span className="font-medium ml-2 text-gray-900 dark:text-gray-100">{availableModels[selectedModel].size_mb} MB</span>
                 </div>
                 <div>
-                  <span className="text-gray-600">Created:</span>
-                  <span className="font-medium ml-2">{formatDate(availableModels[selectedModel].created)}</span>
+                  <span className="text-gray-600 dark:text-gray-300">Created:</span>
+                  <span className="font-medium ml-2 text-gray-900 dark:text-gray-100">{formatDate(availableModels[selectedModel].created)}</span>
                 </div>
               </div>
             </div>

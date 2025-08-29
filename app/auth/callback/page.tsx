@@ -15,24 +15,63 @@ export default function AuthCallback() {
   useEffect(() => {
     const handleAuthCallback = async () => {
       try {
-        const { data, error } = await supabase.auth.getSession()
-        
+        // Get URL parameters
+        const urlParams = new URLSearchParams(window.location.search)
+        const code = urlParams.get('code')
+        const error = urlParams.get('error')
+        const errorDescription = urlParams.get('error_description')
+
+        // Handle error cases first
         if (error) {
-          console.error('Auth callback error:', error)
+          console.error('Auth callback error:', error, errorDescription)
+          const errorParam = encodeURIComponent(error)
+          const descParam = errorDescription ? `&error_description=${encodeURIComponent(errorDescription)}` : ''
+          router.push(`/?error=${errorParam}${descParam}`)
+          return
+        }
+
+        // Handle code exchange for email confirmation
+        if (code) {
+          const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
+          
+          if (exchangeError) {
+            console.error('Code exchange error:', exchangeError)
+            router.push('/?error=auth_callback_error&error_description=' + encodeURIComponent(exchangeError.message))
+            return
+          }
+
+          if (data.session) {
+            if (process.env.NODE_ENV === 'development') {
+              console.log('Email confirmation successful:', data.session.user.email)
+            }
+            router.push('/?success=email_confirmed')
+            return
+          }
+        }
+
+        // Fallback: check for existing session
+        const { data, error: sessionError } = await supabase.auth.getSession()
+        
+        if (sessionError) {
+          console.error('Session check error:', sessionError)
           router.push('/?error=auth_failed')
           return
         }
 
         if (data.session) {
-          console.log('Authentication successful:', data.session.user.email)
+          if (process.env.NODE_ENV === 'development') {
+            console.log('Authentication successful:', data.session.user.email)
+          }
           router.push('/?success=auth_success')
         } else {
-          console.log('No session found')
+          if (process.env.NODE_ENV === 'development') {
+            console.log('No session found')
+          }
           router.push('/?error=no_session')
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Auth callback error:', error)
-        router.push('/?error=auth_failed')
+        router.push('/?error=auth_failed&error_description=' + encodeURIComponent(error.message || 'Authentication failed'))
       }
     }
 
@@ -50,10 +89,10 @@ export default function AuthCallback() {
             </svg>
           </div>
           <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
-            Completing Sign In...
+            Confirming Your Email...
           </h2>
           <p className="mt-2 text-sm text-gray-600">
-            Please wait while we complete your authentication.
+            Please wait while we confirm your email address and sign you in.
           </p>
         </div>
       </div>

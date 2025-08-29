@@ -67,15 +67,15 @@ export default function ImageSegmentation() {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
-      <h2 className="text-2xl font-semibold text-gray-800 mb-4">🔍 Pet Image Segmentation</h2>
-      <p className="text-gray-600 mb-6">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+      <h2 className="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-4">🔍 Pet Image Segmentation</h2>
+      <p className="text-gray-600 dark:text-gray-400 mb-6">
         Upload a pet image to automatically segment the pet from the background using our AI model.
       </p>
 
       {/* File Upload */}
       <div className="mb-6">
-        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+        <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center">
           <input
             type="file"
             ref={fileInputRef}
@@ -89,14 +89,14 @@ export default function ImageSegmentation() {
           >
             Choose Image
           </button>
-          <p className="text-gray-500 mt-2">Upload a pet image to segment</p>
+          <p className="text-gray-500 dark:text-gray-400 mt-2">Upload a pet image to segment</p>
         </div>
       </div>
 
       {/* Error Display */}
       {error && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-red-600 text-sm">{error}</p>
+        <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+          <p className="text-red-600 dark:text-red-400 text-sm">{error}</p>
         </div>
       )}
 
@@ -104,7 +104,7 @@ export default function ImageSegmentation() {
       {previewUrl && (
         <div className="mb-6">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold text-gray-800">Original Image</h3>
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">Original Image</h3>
             <button
               onClick={processSegmentation}
               disabled={isProcessing}
@@ -118,7 +118,7 @@ export default function ImageSegmentation() {
             <img
               src={previewUrl}
               alt="Original"
-              className="w-full max-h-64 object-contain rounded-lg border border-gray-200"
+              className="w-full max-h-64 object-contain rounded-lg border border-gray-200 dark:border-gray-600"
             />
             {isProcessing && (
               <div className="absolute inset-0 bg-black bg-opacity-50 rounded-lg flex items-center justify-center">
@@ -214,9 +214,9 @@ export default function ImageSegmentation() {
       )}
 
       {/* Info Section */}
-      <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-        <h4 className="font-medium text-blue-800 mb-2">ℹ️ About Pet Segmentation</h4>
-        <ul className="text-sm text-blue-700 space-y-1">
+      <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+        <h4 className="font-medium text-blue-800 dark:text-blue-300 mb-2">ℹ️ About Pet Segmentation</h4>
+        <ul className="text-sm text-blue-700 dark:text-blue-400 space-y-1">
           <li>• Automatically detects and segments pets from background</li>
           <li>• Works with dogs, cats, and other pets</li>
           <li>• High-quality segmentation masks for further processing</li>

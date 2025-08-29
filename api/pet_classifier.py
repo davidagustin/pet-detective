@@ -305,7 +305,176 @@ class PetClassifier:
             breed_types = {'cats': [], 'dogs': []}
         
         # Dynamic image loading from images folder
-        images_dir = 'images'
+        images_dir = '../images'
+        available_images = {}
+        
+        # Scan the images directory for available pet images
+        if os.path.exists(images_dir):
+            for filename in os.listdir(images_dir):
+                if filename.lower().endswith(('.jpg', '.jpeg', '.png', '.gif')):
+                    # Extract breed name from filename (e.g., "abyssinian_1.jpg" -> "abyssinian")
+                    # Handle both formats: "abyssinian_1.jpg" and "american_bulldog_1.jpg"
+                    parts = filename.split('_')
+                    if len(parts) >= 2:
+                        # Check if it's a cat breed with underscore (like British_Shorthair_1.jpg)
+                        if parts[0] in ['British', 'Egyptian', 'Maine', 'Russian']:
+                            # Cat breeds with underscores: British_Shorthair_1.jpg -> British_Shorthair
+                            breed_filename = f"{parts[0]}_{parts[1]}"
+                        elif parts[0] in ['American', 'German', 'Yorkshire', 'English', 'Great', 'Staffordshire']:
+                            # Dog breeds with underscores: American_Bulldog_1.jpg -> American_Bulldog
+                            breed_filename = f"{parts[0]}_{parts[1]}"
+                        else:
+                            # Single word breeds: Abyssinian_1.jpg -> Abyssinian
+                            breed_filename = parts[0]
+                        
+                        # Standardize breed name
+                        standardized_breed = filename_to_breed.get(breed_filename.lower(), breed_filename.replace('_', ' ').title())
+                        
+                        # Construct server-side URL with full path
+                        image_path = f'http://localhost:5328/api/images/{filename}'
+                        
+                        if standardized_breed not in available_images:
+                            available_images[standardized_breed] = []
+                        available_images[standardized_breed].append(image_path)
+        
+        # If no images found in the folder, use fallback sample images
+        if not available_images:
+            logger.warning("No images found in images folder. Using fallback images.")
+            available_images = {
+                'Abyssinian': ['/api/images/Abyssinian_1.jpg'],
+                'Beagle': ['/api/images/beagle_1.jpg'],
+                'Bengal': ['/api/images/Bengal_1.jpg'],
+                'Birman': ['/api/images/Birman_1.jpg'],
+                'Boxer': ['/api/images/boxer_1.jpg'],
+                'British Shorthair': ['/api/images/British_1.jpg'],
+                'Chihuahua': ['/api/images/chihuahua_1.jpg'],
+                'Egyptian Mau': ['/api/images/Egyptian_1.jpg'],
+                'German Shorthaired': ['/api/images/german_1.jpg'],
+                'Maine Coon': ['/api/images/Maine_1.jpg'],
+                'Persian': ['/api/images/Persian_1.jpg'],
+                'Pug': ['/api/images/pug_1.jpg'],
+                'Ragdoll': ['/api/images/Ragdoll_1.jpg'],
+                'Siamese': ['/api/images/Siamese_1.jpg'],
+                'Yorkshire Terrier': ['/api/images/yorkshire_terrier_1.jpg']
+            }
+        
+        # Select a random correct answer from available breeds
+        available_breeds = list(available_images.keys())
+        if not available_breeds:
+            return {
+                'error': 'No pet images available for the game'
+            }
+        
+        # Ensure we have enough different breeds for the quiz
+        if len(available_breeds) < 4:
+            return {
+                'error': f'Not enough different pet breeds available. Need at least 4, found {len(available_breeds)}'
+            }
+        
+        correct_answer = random.choice(available_breeds)
+        
+        # Select a random image for the correct breed
+        correct_image_path = random.choice(available_images[correct_answer])
+        
+        # Use breed types from JSON data
+        cat_breeds = set(breed_types.get('cats', []))
+        dog_breeds = set(breed_types.get('dogs', []))
+        
+        # Initialize remaining_breeds at the start - FIXED!
+        remaining_breeds = available_breeds.copy()
+        remaining_breeds.remove(correct_answer)
+        
+        # Determine if correct answer is a cat or dog
+        is_cat_question = correct_answer in cat_breeds
+        is_dog_question = correct_answer in dog_breeds
+        
+        # Filter remaining breeds to same type (cat or dog)
+        if is_cat_question:
+            remaining_breeds = [breed for breed in remaining_breeds if breed in cat_breeds]
+        elif is_dog_question:
+            remaining_breeds = [breed for breed in remaining_breeds if breed in dog_breeds]
+        # For unclear breed types, keep all remaining breeds
+        
+        # Ensure we have enough breeds of the same type
+        if len(remaining_breeds) < 3:
+            # If not enough same-type breeds, fall back to all breeds
+            remaining_breeds = available_breeds.copy()
+            remaining_breeds.remove(correct_answer)
+        
+        # Generate wrong options based on difficulty - ensure all are different breeds
+        wrong_options = []
+        
+        if game_mode == 'easy':
+            # Easy: 2 wrong options from different breeds
+            num_wrong = min(2, len(remaining_breeds))
+        elif game_mode == 'medium':
+            # Medium: 3 wrong options from different breeds
+            num_wrong = min(3, len(remaining_breeds))
+        else:  # hard
+            # Hard: 3 wrong options from different breeds
+            num_wrong = min(3, len(remaining_breeds))
+        
+        # Select wrong options from different breeds of the same type
+        wrong_options = random.sample(remaining_breeds, num_wrong)
+        
+        # Verify all options are different breeds
+        all_options = [correct_answer] + wrong_options
+        if len(set(all_options)) != len(all_options):
+            return {
+                'error': 'Failed to generate unique breed options for the quiz'
+            }
+        
+        # Create options list with correct answer
+        options = [correct_answer] + wrong_options
+        random.shuffle(options)
+        
+        # Get AI prediction for the image
+        try:
+            prediction_results = self.predict(correct_image_path.replace('/api/', '../'))
+            ai_prediction = prediction_results.get('top_breed', correct_answer)
+            ai_confidence = prediction_results.get('confidence', 0.0)
+        except Exception as e:
+            logger.warning(f"Could not get AI prediction for {correct_image_path}: {e}")
+            ai_prediction = correct_answer
+            ai_confidence = 0.85
+        
+        return {
+            'image': correct_image_path,
+            'options': options,
+            'correct_answer': correct_answer,
+            'ai_prediction': ai_prediction,
+            'ai_confidence': round(ai_confidence, 2)
+        }
+
+    def generate_game_question_OLD(self, game_mode: str = 'medium') -> dict:
+        """
+        Generate a game question using server-side image URLs for optimal performance
+        
+        Args:
+            game_mode: Difficulty level ('easy', 'medium', 'hard')
+            
+        Returns:
+            Dictionary containing game question data with server-side image URLs
+        """
+        import random
+        import os
+        
+        print(f"DEBUG: Starting generate_game_question with game_mode: {game_mode}")
+        
+        # Load breed mapping from JSON file
+        breed_mapping_path = os.path.join(os.path.dirname(__file__), 'breed_mapping.json')
+        try:
+            with open(breed_mapping_path, 'r') as f:
+                breed_data = json.load(f)
+                filename_to_breed = breed_data['filename_to_breed']
+                breed_types = breed_data['breed_types']
+        except FileNotFoundError:
+            logger.warning("breed_mapping.json not found. Using fallback mapping.")
+            filename_to_breed = {}
+            breed_types = {'cats': [], 'dogs': []}
+        
+        # Dynamic image loading from images folder
+        images_dir = '../images'
         available_images = {}
         
         # Scan the images directory for available pet images
@@ -362,6 +531,7 @@ class PetClassifier:
         
         # Select a random correct answer from available breeds
         available_breeds = list(available_images.keys())
+        print(f"DEBUG: Found {len(available_breeds)} available breeds: {available_breeds[:5]}...")
         if not available_breeds:
             return {
                 'error': 'No pet images available for the game'
@@ -382,6 +552,10 @@ class PetClassifier:
         cat_breeds = set(breed_types.get('cats', []))
         dog_breeds = set(breed_types.get('dogs', []))
         
+        # Initialize remaining_breeds at the start
+        remaining_breeds = available_breeds.copy()
+        remaining_breeds.remove(correct_answer)
+        
         # Determine if correct answer is a cat or dog
         is_cat_question = correct_answer in cat_breeds
         is_dog_question = correct_answer in dog_breeds
@@ -391,9 +565,7 @@ class PetClassifier:
             remaining_breeds = [breed for breed in remaining_breeds if breed in cat_breeds]
         elif is_dog_question:
             remaining_breeds = [breed for breed in remaining_breeds if breed in dog_breeds]
-        else:
-            # If breed type is unclear, use all remaining breeds
-            pass
+        # For unclear breed types, keep all remaining breeds
         
         # Ensure we have enough breeds of the same type
         if len(remaining_breeds) < 3:

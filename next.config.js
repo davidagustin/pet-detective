@@ -1,15 +1,13 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  rewrites: async () => {
-    return [
-      {
-        source: '/api/:path*',
-        destination:
-          process.env.NODE_ENV === 'development'
-            ? 'http://127.0.0.1:5328/api/:path*'
-            : '/api/',
-      },
-    ]
+  // Remove rewrites for production deployment
+  // API calls should be made directly to the Flask backend
+  experimental: {
+    appDir: true,
+  },
+  // Ensure proper static file handling
+  images: {
+    domains: ['localhost'],
   },
 }
 

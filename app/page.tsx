@@ -2,13 +2,13 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@supabase/supabase-js'
-import Auth from '../components/Auth'
-import Leaderboard from '../components/Leaderboard'
-import DynamicModelSelector from '../components/DynamicModelSelector'
-import EnhancedPetGame from '../components/EnhancedPetGame'
-import ImageSegmentation from '../components/ImageSegmentation'
-import { apiClient } from '../lib/api-client'
-import { config } from '../lib/config'
+import Auth from '@/components/Auth'
+import Leaderboard from '@/components/Leaderboard'
+import DynamicModelSelector from '@/components/DynamicModelSelector'
+import EnhancedPetGame from '@/components/EnhancedPetGame'
+import ImageSegmentation from '@/components/ImageSegmentation'
+import { apiClient } from '@/lib/api-client'
+import { config } from '@/lib/config'
 import { 
   useAccessibility, 
   useLoadingState, 
@@ -16,7 +16,7 @@ import {
   useSuccessState,
   accessibilityUtils,
   ScreenReaderOnly 
-} from '../lib/accessibility'
+} from '@/lib/accessibility'
 
 const supabase = createClient(
   config.supabase.url,

@@ -16,7 +16,7 @@ import {
   useSuccessState,
   accessibilityUtils,
   ScreenReaderOnly 
-} from '../lib/accessibility.ts'
+} from '@/lib/accessibility'
 
 const supabase = createClient(
   config.supabase.url,

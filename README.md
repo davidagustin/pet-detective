@@ -448,7 +448,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - **Issues**: [GitHub Issues](https://github.com/yourusername/pet-detective/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/yourusername/pet-detective/discussions)
-- **Email**: support@petdetective.com
 
 ---
 

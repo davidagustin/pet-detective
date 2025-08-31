@@ -65,14 +65,14 @@ env/
 ENV/
 
 # Model files
-*.pth
+#*.pth
 *.pt
 *.pkl
-*.safetensors
-models/*.pth
+#*.safetensors
+#models/*.pth
 models/*.pt
 models/*.pkl
-models/*.safetensors
+#models/*.safetensors
 api/*.pth
 api/*.pt
 api/*.pkl

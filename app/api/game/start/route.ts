@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 
 // Load real breed data
-const loadBreedData = () => {
+const loadBreedData = (): BreedData | null => {
   try {
     const breedMappingPath = path.join(process.cwd(), 'api', 'breed_mapping.json');
     const breedData = JSON.parse(fs.readFileSync(breedMappingPath, 'utf8'));
@@ -14,8 +14,25 @@ const loadBreedData = () => {
   }
 };
 
+// Types
+type Difficulty = 'easy' | 'medium' | 'hard';
+type AnimalType = 'cat' | 'dog';
+
+interface BreedData {
+  breed_types: {
+    cats: string[];
+    dogs: string[];
+  };
+  filename_to_breed: Record<string, string>;
+}
+
+// Constants
+const OPTION_COUNTS: Record<Difficulty, number> = { easy: 4, medium: 4, hard: 6 };
+const DEFAULT_MAX_IMAGES = 200;
+const AI_PREDICTION_TIMEOUT = 10000; // 10 seconds
+
 // Breed to max image number mapping based on Oxford-IIIT Pet dataset analysis
-const breedMaxImages: { [key: string]: number } = {
+const breedMaxImages: Record<string, number> = {
   'Abyssinian': 232,
   'Bengal': 201,
   'Birman': 201,
@@ -63,12 +80,12 @@ const getCloudinaryUrl = (breed: string, imageNumber: number) => {
 };
 
 // Get animal type for a breed
-const getAnimalType = (breed: string, breedData: any): 'cat' | 'dog' => {
+const getAnimalType = (breed: string, breedData: BreedData): AnimalType => {
   const catBreeds = breedData.breed_types.cats;
   return catBreeds.includes(breed) ? 'cat' : 'dog';
 };
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   return NextResponse.json({ 
     message: 'Game start API is working',
     method: 'GET',
@@ -82,7 +99,7 @@ export async function POST(request: NextRequest) {
     const { model_type = 'resnet50', model_name, game_mode = 'medium', difficulty = 'medium' } = body;
     
     // Use game_mode if provided, otherwise fall back to difficulty
-    const gameDifficulty = game_mode || difficulty;
+    const gameDifficulty: Difficulty = (game_mode || difficulty) as Difficulty;
 
     // Load real breed data
     const breedData = loadBreedData();
@@ -97,8 +114,7 @@ export async function POST(request: NextRequest) {
     const allBreeds = [...breedData.breed_types.cats, ...breedData.breed_types.dogs];
     
     // Generate random options based on difficulty
-    const optionCounts = { easy: 4, medium: 4, hard: 6 };
-    const optionCount = optionCounts[gameDifficulty as keyof typeof optionCounts] || 4;
+    const optionCount = OPTION_COUNTS[gameDifficulty] || 4;
 
     // Select random correct answer
     const correctAnswer = allBreeds[Math.floor(Math.random() * allBreeds.length)];
@@ -132,7 +148,7 @@ export async function POST(request: NextRequest) {
     const options = [correctAnswer, ...wrongOptions].sort(() => 0.5 - Math.random());
 
     // Get the maximum image number for the correct breed
-    const maxImageNumber = breedMaxImages[correctAnswer] || 200; // Fallback to 200 if breed not found
+    const maxImageNumber = breedMaxImages[correctAnswer] || DEFAULT_MAX_IMAGES;
     
     // Generate random image number (1 to max for the specific breed)
     const imageNumber = Math.floor(Math.random() * maxImageNumber) + 1;
@@ -161,7 +177,7 @@ export async function POST(request: NextRequest) {
           model_type: model_type,
           model_name: model_name
         }),
-        signal: AbortSignal.timeout(10000), // 10 second timeout
+        signal: AbortSignal.timeout(AI_PREDICTION_TIMEOUT),
       });
 
       if (predictionResponse.ok) {

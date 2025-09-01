@@ -35,6 +35,18 @@ function CompactLeaderboard() {
     fetchLeaderboard()
   }, [])
 
+  const fetchFromAPI = async () => {
+    try {
+      const data = await apiClient.getLeaderboard();
+      setLeaderboard(data.allTime || []);
+    } catch (error) {
+      console.error('Error fetching leaderboard from API:', error);
+      setLeaderboard([]);
+      return false;
+    }
+    return true;
+  }
+
   const fetchLeaderboard = async () => {
     try {
       setLoading(true)
@@ -45,14 +57,7 @@ function CompactLeaderboard() {
                                    config.supabase.anonKey !== 'placeholder-key'
       
       if (!isSupabaseConfigured) {
-        // Try to fetch from API instead of using sample data
-        try {
-          const data = await apiClient.getLeaderboard();
-          setLeaderboard(data.allTime || []);
-        } catch (error) {
-          console.error('Error fetching leaderboard from API:', error);
-          setLeaderboard([]);
-        }
+        await fetchFromAPI();
         setLoading(false)
         return
       }
@@ -66,13 +71,8 @@ function CompactLeaderboard() {
 
       if (supabaseError) {
         console.error('Supabase error:', supabaseError)
-        // Try to fetch from API instead of using sample data
-        try {
-          const data = await apiClient.getLeaderboard();
-          setLeaderboard(data.allTime || []);
-        } catch (error) {
-          console.error('Error fetching leaderboard from API:', error);
-          setLeaderboard([]);
+        const success = await fetchFromAPI();
+        if (!success) {
           setError('Error loading leaderboard from all sources')
         }
         setLoading(false)
@@ -83,13 +83,8 @@ function CompactLeaderboard() {
       setLoading(false)
     } catch (error: any) {
       console.error('Leaderboard fetch error:', error)
-      // Try to fetch from API instead of using sample data
-      try {
-        const data = await apiClient.getLeaderboard();
-        setLeaderboard(data.allTime || []);
-      } catch (apiError) {
-        console.error('Error fetching leaderboard from API:', apiError);
-        setLeaderboard([]);
+      const success = await fetchFromAPI();
+      if (!success) {
         setError('Error loading leaderboard from all sources')
       }
       setLoading(false)

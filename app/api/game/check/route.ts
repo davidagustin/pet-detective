@@ -15,10 +15,10 @@ const calculateScore = (
 ): number => {
   if (!isCorrect) return 0;
   
-  let baseScore = 100;
-  let timeBonus = Math.max(0, (30 - timeTaken) * 2);
+  const baseScore = 100;
+  const timeBonus = Math.max(0, (30 - timeTaken) * 2);
   let difficultyMultiplier = 1;
-  let streakBonus = Math.min(streak * 5, 25); // Max 25 points for streak
+  const streakBonus = Math.min(streak * 5, 25); // Max 25 points for streak
   
   switch (gameMode) {
     case 'easy':
@@ -37,7 +37,7 @@ const calculateScore = (
 // Save score to leaderboard
 const saveScoreToLeaderboard = async (scoreData: any) => {
   try {
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('leaderboard')
       .insert([scoreData])
       .select();
@@ -160,7 +160,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   return NextResponse.json({ 
     message: 'Game check API is working',
     method: 'GET',

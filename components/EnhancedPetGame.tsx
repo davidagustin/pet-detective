@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { apiClient } from '../lib/api-client'
+import type { User } from '@supabase/supabase-js'
 
 interface GameState {
   image: string
@@ -19,7 +20,7 @@ interface GameState {
 interface EnhancedPetGameProps {
   selectedModel: string
   selectedModelName: string | null
-  user: any
+  user: User | null
   onScoreUpdate: (score: number, total: number) => void
 }
 
@@ -60,9 +61,9 @@ export default function EnhancedPetGame({ selectedModel, selectedModelName, user
       const data = await apiClient.startGame(selectedModel, selectedModelName || undefined, gameMode)
       setGameState(data)
       setIsTimerActive(true)
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error starting game:', error)
-      alert('Failed to start game: ' + error.message)
+      alert('Failed to start game: ' + (error instanceof Error ? error.message : 'Unknown error'))
     } finally {
       setIsLoading(false)
     }
@@ -104,7 +105,7 @@ export default function EnhancedPetGame({ selectedModel, selectedModelName, user
       
       setTotalQuestions(totalQuestions + 1)
       onScoreUpdate(score, totalQuestions + 1)
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error checking answer:', error)
     } finally {
       setIsLoading(false)
@@ -121,10 +122,10 @@ export default function EnhancedPetGame({ selectedModel, selectedModelName, user
   }
 
   const calculatePoints = (timeTaken: number, currentStreak: number, mode: string) => {
-    let basePoints = 10
-    let timeBonus = Math.max(0, 30 - timeTaken) * 0.5
-    let streakBonus = Math.min(currentStreak * 2, 10)
-    let modeMultiplier = mode === 'easy' ? 0.7 : mode === 'hard' ? 1.5 : 1.0
+    const basePoints = 10
+    const timeBonus = Math.max(0, 30 - timeTaken) * 0.5
+    const streakBonus = Math.min(currentStreak * 2, 10)
+    const modeMultiplier = mode === 'easy' ? 0.7 : mode === 'hard' ? 1.5 : 1.0
     
     return Math.round((basePoints + timeBonus + streakBonus) * modeMultiplier)
   }
@@ -229,7 +230,7 @@ export default function EnhancedPetGame({ selectedModel, selectedModelName, user
           <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6 max-w-md mx-auto">
             <div className="flex items-center justify-center space-x-2 mb-2">
               <span className="text-lg">🤖</span>
-              <span className="font-semibold text-blue-800 dark:text-blue-300">You'll compete against:</span>
+              <span className="font-semibold text-blue-800 dark:text-blue-300">You&apos;ll compete against:</span>
             </div>
             <div className="text-lg font-bold text-blue-900 dark:text-blue-200 mb-1">
               {getModelDisplayName(selectedModel)}

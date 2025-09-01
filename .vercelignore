@@ -1,32 +1,58 @@
-# Python files and API (not needed for frontend deployment)
-api/*.py
-api/utils/
-requirements.txt
+# Large files and directories
+node_modules/
+.next/
+out/
+dist/
+build/
+*.log
+*.tmp
+*.temp
+
+# Python files and directories
 venv/
 __pycache__/
-
-# Large model files (should be served externally)
-# models/ - REMOVED: Models are needed for AI competition
-# *.safetensors - REMOVED: Model files are needed
-# *.pth - REMOVED: Model files are needed
-# *.pt - REMOVED: Model files are needed
-*.pkl
-*.bin
-*.h5
-
-# Large image dataset (should be served externally)  
-images/
-
-# Development and build artifacts
-.env*
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
 *.log
-logs/
+.git/
+.mypy_cache/
+.pytest_cache/
+.hypothesis/
 
-# Scripts not needed for deployment
-scripts/
+# Model files
+models/
+*.pth
+*.safetensors
+*.bin
+*.onnx
 
-# Database files
-supabase/
+# API files (not needed for frontend)
+api/
+requirements.txt
 
-# Test directories
-temp_images_test/
+# Temporary files
+temp-api-only/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.sublime-*

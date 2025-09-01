@@ -137,17 +137,17 @@ export default function Home() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Navigation Tabs */}
-        <div className="mb-8">
-          <div className="flex flex-wrap gap-2">
+        {/* Navigation Tabs - Centered */}
+        <div className="mb-8 flex justify-center">
+          <div className="flex flex-wrap gap-3 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
             <button
               onClick={() => {
                 setShowDynamicModelSelector(false)
               }}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              className={`px-6 py-3 rounded-md font-medium transition-all duration-200 ${
                 !showDynamicModelSelector
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-500'
+                  ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm'
+                  : 'text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100'
               }`}
             >
               🎮 Game & Predictions
@@ -156,10 +156,10 @@ export default function Home() {
               onClick={() => {
                 setShowDynamicModelSelector(true)
               }}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              className={`px-6 py-3 rounded-md font-medium transition-all duration-200 ${
                 showDynamicModelSelector
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-500'
+                  ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm'
+                  : 'text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100'
               }`}
             >
               🤖 Model Selection
@@ -169,7 +169,7 @@ export default function Home() {
 
         {/* Model Selection Section */}
         {showDynamicModelSelector && (
-          <div className="mb-8">
+          <div className="mb-8 max-w-4xl mx-auto">
             <DynamicModelSelector
               selectedModel={selectedModelName || selectedModel}
               onModelSelect={handleDynamicModelSelect}
@@ -179,8 +179,8 @@ export default function Home() {
 
         {/* Main Content */}
         {!showDynamicModelSelector ? (
-          <div className="max-w-7xl mx-auto">
-            {/* Game Section - Full Width */}
+          <div className="max-w-6xl mx-auto">
+            {/* Game Section - Centered */}
             <div className="w-full">
               <EnhancedPetGame
                 selectedModel={selectedModel}
@@ -192,24 +192,26 @@ export default function Home() {
           </div>
         ) : null}
 
-        {/* Game Stats */}
+        {/* Game Stats - Centered */}
         {!showDynamicModelSelector && (
-          <div className="mt-8 bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-            <h2 className="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-4">📊 Game Statistics</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="text-center">
-                <div className="text-3xl font-bold text-blue-600">{score}</div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">Total Score</div>
-              </div>
-              <div className="text-center">
-                <div className="text-3xl font-bold text-green-600">{totalQuestions}</div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">Questions Answered</div>
-              </div>
-              <div className="text-center">
-                <div className="text-3xl font-bold text-purple-600">
-                  {totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0}%
+          <div className="mt-8 max-w-4xl mx-auto">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 border border-gray-200 dark:border-gray-700">
+              <h2 className="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-6 text-center">📊 Game Statistics</h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div className="text-center">
+                  <div className="text-4xl font-bold text-blue-600 dark:text-blue-400 mb-2">{score}</div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400 font-medium">Total Score</div>
                 </div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">Accuracy</div>
+                <div className="text-center">
+                  <div className="text-4xl font-bold text-green-600 dark:text-green-400 mb-2">{totalQuestions}</div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400 font-medium">Questions Answered</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-4xl font-bold text-purple-600 dark:text-purple-400 mb-2">
+                    {totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0}%
+                  </div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400 font-medium">Accuracy</div>
+                </div>
               </div>
             </div>
           </div>

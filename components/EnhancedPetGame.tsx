@@ -143,6 +143,46 @@ export default function EnhancedPetGame({ selectedModel, selectedModelName, user
     return 'text-red-600'
   }
 
+  // Helper functions for model display
+  const getModelDisplayName = (model: string) => {
+    switch (model) {
+      case 'resnet50':
+        return 'ResNet-50'
+      case 'mobilenetv2':
+        return 'MobileNet V2'
+      case 'alexnet':
+        return 'AlexNet'
+      default:
+        return model.toUpperCase()
+    }
+  }
+
+  const getModelDescription = (model: string) => {
+    switch (model) {
+      case 'resnet50':
+        return 'Deep Residual Network - High Accuracy'
+      case 'mobilenetv2':
+        return 'Mobile-Optimized - Fast Inference'
+      case 'alexnet':
+        return 'Classic CNN - Balanced Performance'
+      default:
+        return 'AI Model'
+    }
+  }
+
+  const getModelAccuracy = (model: string) => {
+    switch (model) {
+      case 'resnet50':
+        return '92'
+      case 'mobilenetv2':
+        return '88'
+      case 'alexnet':
+        return '85'
+      default:
+        return '85'
+    }
+  }
+
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
       <div className="flex justify-between items-center mb-6">
@@ -182,7 +222,25 @@ export default function EnhancedPetGame({ selectedModel, selectedModelName, user
         <div className="text-center py-8">
           <div className="text-6xl mb-4">🐕</div>
           <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-2">Ready to Play?</h3>
-          <p className="text-gray-600 dark:text-gray-400 mb-6">Test your pet breed knowledge against our AI!</p>
+          <p className="text-gray-600 dark:text-gray-400 mb-4">Test your pet breed knowledge against our AI!</p>
+          
+          {/* Model Competition Info */}
+          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6 max-w-md mx-auto">
+            <div className="flex items-center justify-center space-x-2 mb-2">
+              <span className="text-lg">🤖</span>
+              <span className="font-semibold text-blue-800 dark:text-blue-300">You'll compete against:</span>
+            </div>
+            <div className="text-lg font-bold text-blue-900 dark:text-blue-200 mb-1">
+              {getModelDisplayName(selectedModel)}
+            </div>
+            <div className="text-sm text-blue-700 dark:text-blue-400 mb-2">
+              {getModelDescription(selectedModel)}
+            </div>
+            <div className="text-xs text-blue-600 dark:text-blue-300">
+              AI Accuracy: {getModelAccuracy(selectedModel)}%
+            </div>
+          </div>
+          
           <button
             onClick={startNewGame}
             disabled={isLoading}
@@ -202,11 +260,26 @@ export default function EnhancedPetGame({ selectedModel, selectedModelName, user
             </div>
           </div>
 
-          {/* AI Info and Back Button */}
-          <div className="flex justify-between items-center">
-            <div className="text-sm text-gray-600 dark:text-gray-400">
-              AI Model: <span className="font-medium">{selectedModelName || selectedModel.toUpperCase()}</span>
+          {/* AI Model Competition Banner */}
+          <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-4 rounded-lg mb-4 shadow-lg">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center space-x-3">
+                <div className="text-2xl">🤖</div>
+                <div>
+                  <div className="text-sm opacity-90">You're competing against:</div>
+                  <div className="text-lg font-bold">{getModelDisplayName(selectedModel)}</div>
+                  <div className="text-xs opacity-75">{getModelDescription(selectedModel)}</div>
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="text-xs opacity-75">Accuracy</div>
+                <div className="text-lg font-bold">{getModelAccuracy(selectedModel)}%</div>
+              </div>
             </div>
+          </div>
+
+          {/* Back Button */}
+          <div className="flex justify-end mb-4">
             <button
               onClick={() => {
                 setGameState(null)
@@ -217,10 +290,10 @@ export default function EnhancedPetGame({ selectedModel, selectedModelName, user
                 setTimeLeft(30)
                 // Reset to initial state but keep score and streak
               }}
-              className="bg-gray-500 hover:bg-gray-600 text-white text-sm font-medium py-1 px-3 rounded-lg transition-colors"
+              className="bg-gray-500 hover:bg-gray-600 text-white text-sm font-medium py-2 px-4 rounded-lg transition-colors"
               title="Back to start screen"
             >
-              🏠 Back
+              🏠 Back to Model Selection
             </button>
           </div>
 
@@ -304,7 +377,12 @@ export default function EnhancedPetGame({ selectedModel, selectedModelName, user
           {/* Results Display */}
           {showResults && (
             <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-              <h4 className="font-semibold text-gray-800 dark:text-gray-200 mb-2">Round Results:</h4>
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="font-semibold text-gray-800 dark:text-gray-200">Round Results:</h4>
+                <div className="text-xs text-gray-500 dark:text-gray-400">
+                  vs {getModelDisplayName(selectedModel)} ({getModelAccuracy(selectedModel)}% accuracy)
+                </div>
+              </div>
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <span className="text-gray-600 dark:text-gray-400">Your Answer:</span>
@@ -316,11 +394,20 @@ export default function EnhancedPetGame({ selectedModel, selectedModelName, user
                 </div>
                 <div>
                   <span className="text-gray-600 dark:text-gray-400">AI Prediction:</span>
-                  <div className="font-medium text-gray-800 dark:text-gray-200">{gameState.aiPrediction}</div>
+                  <div className="font-medium text-blue-600 dark:text-blue-400">{gameState.aiPrediction}</div>
                 </div>
                 <div>
                   <span className="text-gray-600 dark:text-gray-400">AI Confidence:</span>
                   <div className="font-medium text-gray-800 dark:text-gray-200">{(gameState.aiConfidence * 100).toFixed(1)}%</div>
+                </div>
+              </div>
+              {/* Competition Result */}
+              <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+                <div className="text-center">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">Competition Result: </span>
+                  <span className={`font-semibold ${selectedAnswer === gameState.correctAnswer ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                    {selectedAnswer === gameState.correctAnswer ? '✅ You beat the AI!' : '❌ AI was more accurate'}
+                  </span>
                 </div>
               </div>
             </div>

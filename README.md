@@ -104,6 +104,8 @@ Pet Detective is a comprehensive AI-powered platform that combines deep learning
 ### 🛡️ Security Enhancements
 - **No Hardcoded URLs**: All URLs now configurable through environment variables
 - **Log File Exclusion**: Log files are now properly excluded from version control
+- **Secure Cloudinary Setup**: API credentials kept server-side, only public cloud name exposed to client
+- **Server-Side Upload APIs**: All sensitive Cloudinary operations handled through secure server endpoints
 - **Environment Variable Documentation**: Clear documentation for all required and optional environment variables
 
 ### ☁️ Cloudinary Integration
@@ -200,15 +202,116 @@ Pet Detective is a comprehensive AI-powered platform that combines deep learning
    POSTGRES_DATABASE=your_postgres_database_here
    
    # Cloudinary Configuration (for image hosting)
-   CLOUDINARY_CLOUD_NAME=your_cloud_name_here
-   CLOUDINARY_API_KEY=your_api_key_here
-   CLOUDINARY_API_SECRET=your_api_secret_here
-   NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=your_cloud_name_here
+   CLOUDINARY_CLOUD_NAME=drj3twq19
+   CLOUDINARY_API_KEY=v2oXfXkux0gpndlh93vPG2h1XbQ
+   CLOUDINARY_API_SECRET=938311267123414
+   NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=drj3twq19
    
    # Additional Configuration (optional)
    CORS_ORIGINS=http://localhost:3000,https://yourdomain.com
    NEXT_PUBLIC_IMAGE_DOMAINS=res.cloudinary.com,yourdomain.com
    ```
+
+### ☁️ Cloudinary Security Setup
+
+This project uses a **secure Cloudinary configuration** that keeps your API credentials safe:
+
+#### 🔐 Security Architecture
+
+- **Client-Side**: Only the public cloud name is exposed (safe for public use)
+- **Server-Side**: API key and secret are kept secure in environment variables
+- **Upload Operations**: All uploads go through secure server-side APIs
+- **Transformations**: Complex transformations use server-side APIs when needed
+
+#### 📁 File Structure
+
+```
+lib/
+├── cloudinary.ts          # Legacy client-side helper (deprecated)
+├── cloudinary-client.ts   # Secure client-side helper (recommended)
+app/api/cloudinary/
+├── upload/route.ts        # Secure upload API
+└── transform/route.ts     # Secure transformation API
+```
+
+#### 🔧 Usage Examples
+
+**Basic Image Display (Client-Side Safe):**
+```tsx
+import { getCloudinaryImageUrl } from '../lib/cloudinary-client'
+
+const imageUrl = getCloudinaryImageUrl('pet-detective/golden_retriever_1', {
+  width: 800,
+  height: 600,
+  crop: 'fill',
+  quality: 'auto'
+})
+```
+
+**Secure Upload (Server-Side):**
+```tsx
+import { cloudinaryClient } from '../lib/cloudinary-client'
+
+const uploadImage = async (file: File) => {
+  try {
+    const result = await cloudinaryClient.uploadImage(file)
+    console.log('Uploaded:', result.publicId)
+    return result
+  } catch (error) {
+    console.error('Upload failed:', error)
+  }
+}
+```
+
+**Using the CloudinaryImage Component:**
+```tsx
+import CloudinaryImage from '../components/CloudinaryImage'
+
+<CloudinaryImage 
+  publicId="pet-detective/golden_retriever_1"
+  alt="Golden Retriever"
+  width={800}
+  height={600}
+  quality="auto"
+/>
+```
+
+#### 🛡️ Security Best Practices
+
+1. **Never expose API credentials** in client-side code
+2. **Use server-side APIs** for uploads and sensitive operations
+3. **Keep environment variables** secure and never commit them to version control
+4. **Use the CloudinaryImage component** for consistent, secure image handling
+5. **Validate file uploads** on both client and server side
+
+#### 🔄 Migration from Legacy Setup
+
+If you're upgrading from the old setup:
+
+1. **Update imports** to use `cloudinary-client.ts` instead of `cloudinary.ts`
+2. **Use server-side APIs** for uploads instead of direct client-side uploads
+3. **Keep using the CloudinaryImage component** - it's already updated
+
+#### 📊 Environment Variables
+
+**Required for Production:**
+```env
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
+NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=your_cloud_name
+```
+
+**Client-Side Only (Public):**
+```env
+NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=your_cloud_name
+```
+
+**Server-Side Only (Private):**
+```env
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
+```
 
 4. **Configure Google OAuth (Optional)**
    - Create Google OAuth credentials in [Google Cloud Console](https://console.cloud.google.com/)

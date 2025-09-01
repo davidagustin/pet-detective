@@ -41,10 +41,11 @@ class CloudinaryHelper:
             breed, number = self._parse_filename(filename)
             public_id = f"pet-detective/pet-detective/{breed}_{number}"
         
-        # Build transformation string
-        transformations = f"w_{width},h_{height},c_{crop},q_{quality}"
-        
-        return f"{self.BASE_URL}/{transformations}/{public_id}.jpg"
+            # Build transformation string
+    transformations = f"w_{width},h_{height},c_{crop},q_{quality}"
+    
+    # Use versioning for better caching and consistency
+    return f"{self.BASE_URL}/v1756482370/{transformations}/{public_id}.jpg"
     
     def get_responsive_urls(self, filename: str) -> Dict[str, str]:
         """Get responsive image URLs for different screen sizes"""
@@ -81,7 +82,8 @@ class CloudinaryHelper:
             public_id = f"pet-detective/pet-detective/{breed}_{number}"
         
         transform_string = "/".join(transformations)
-        return f"{self.BASE_URL}/{transform_string}/{public_id}.jpg"
+        # Use versioning for better caching and consistency
+        return f"{self.BASE_URL}/v1756482370/{transform_string}/{public_id}.jpg"
     
     def get_available_breeds(self) -> List[str]:
         """Get list of all available breeds from mappings"""

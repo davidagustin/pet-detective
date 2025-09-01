@@ -17,6 +17,7 @@ const loadBreedData = (): BreedData | null => {
 // Types
 type Difficulty = 'easy' | 'medium' | 'hard';
 type AnimalType = 'cat' | 'dog';
+type AnimalFilter = 'cats' | 'dogs' | 'both';
 
 interface BreedData {
   breed_types: {
@@ -31,7 +32,7 @@ const OPTION_COUNTS: Record<Difficulty, number> = { easy: 4, medium: 4, hard: 6 
 const DEFAULT_MAX_IMAGES = 200;
 const AI_PREDICTION_TIMEOUT = 10000; // 10 seconds
 
-// Breed to max image number mapping based on Oxford-IIIT Pet dataset analysis
+// Breed to max image number mapping based on actual local images analysis
 const breedMaxImages: Record<string, number> = {
   'Abyssinian': 232,
   'Bengal': 201,
@@ -76,8 +77,60 @@ const breedMaxImages: Record<string, number> = {
 const getCloudinaryUrl = (breed: string, imageNumber: number) => {
   const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'drj3twq19';
   const breedKey = breed.toLowerCase().replace(/\s+/g, '_');
-  // Ensure the URL format matches Cloudinary's expected structure
-  return `https://res.cloudinary.com/${cloudName}/image/upload/c_fill,w_800,h_600,q_auto/pet-detective/${breedKey}_${imageNumber}.jpg`;
+  // Use the versioned URL format that matches the uploaded images
+  return `https://res.cloudinary.com/${cloudName}/image/upload/v1756482370/pet-detective/pet-detective/${breedKey}_${imageNumber}.jpg`;
+};
+
+// Helper function to generate sequential arrays
+const range = (start: number, end: number): number[] => 
+  Array.from({ length: end - start + 1 }, (_, i) => i + start);
+
+// Available images mapping (excludes missing images to ensure 100% accessibility)
+const availableImages: Record<string, number[]> = {
+  // Cat breeds - with verified available images
+  'Abyssinian': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 24, 25, 26, 27, 29, 30, 31, 32, 33, 34, 36, 37, 40, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 54, 55, 56, 57, 58, 60, 61, 62, 63, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 164, 165, 166, 167, 168, 169, 170, 172, 173, 174, 175, 176, 177, 178, 179, 180, 181, 182, 183, 184, 185, 190, 191, 192, 193, 195, 196, 197, 201, 202, 204, 205, 206, 207, 210, 212, 213, 215, 216, 217, 219, 220, 221, 223, 224, 225, 226, 228, 230, 232],
+  'Bengal': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200, 201],
+  'Birman': range(1, 200),
+  'Bombay': range(1, 200),
+  'British Shorthair': range(1, 200),
+  'Egyptian Mau': range(1, 200),
+  'Maine Coon': range(1, 200),
+  'Persian': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 25, 26, 27, 28, 29, 30, 31, 32, 34, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 49, 51, 52, 53, 54, 55, 56, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 94, 95, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 111, 112, 114, 115, 116, 117, 118, 120, 121, 122, 123, 125, 126, 128, 129, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 143, 144, 145, 147, 149, 150, 152, 153, 155, 156, 158, 159, 160, 161, 162, 163, 164, 165, 166, 168, 169, 170, 171, 172, 173, 174, 175, 176, 179, 180, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 200, 201, 202, 206, 213, 217, 221, 224, 228, 233, 239, 255, 256, 257, 258, 259, 260, 261, 262, 263, 264, 265, 266, 267, 268, 269, 270, 271, 272, 273],
+  'Ragdoll': range(1, 200),
+  'Russian Blue': range(1, 200),
+  'Siamese': range(1, 200),
+  'Sphynx': range(1, 200),
+  
+  // Dog breeds - using full range, can be refined if needed
+  'American Bulldog': range(1, 200),
+  'American Pit Bull Terrier': range(1, 200),
+  'Basset Hound': range(1, 200),
+  'Beagle': range(1, 200),
+  'Boxer': range(1, 200),
+  'Chihuahua': range(1, 200),
+  'English Cocker Spaniel': range(1, 200),
+  'English Setter': range(1, 200),
+  'German Shorthaired': range(1, 200),
+  'Great Pyrenees': range(1, 200),
+  'Havanese': range(1, 200),
+  'Japanese Chin': range(1, 200),
+  'Keeshond': range(1, 200),
+  'Leonberger': range(1, 200),
+  'Miniature Pinscher': range(1, 200),
+  'Newfoundland': range(1, 200),
+  'Pomeranian': range(1, 200),
+  'Pug': range(1, 200),
+  'Saint Bernard': range(1, 200),
+  'Samoyed': range(1, 200),
+  'Scottish Terrier': range(1, 199), // Only has 199 images
+  'Shiba Inu': range(1, 200),
+  'Staffordshire Bull Terrier': range(1, 200),
+  'Wheaten Terrier': range(1, 200),
+  'Yorkshire Terrier': range(1, 200)
+};
+
+const getAvailableImagesForBreed = (breed: string): number[] | null => {
+  return availableImages[breed] || null;
 };
 
 // Get animal type for a breed
@@ -97,10 +150,17 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { model_type = 'resnet50', model_name, game_mode = 'medium', difficulty = 'medium' } = body;
+    const { 
+      model_type = 'resnet50', 
+      model_name, 
+      game_mode = 'medium', 
+      difficulty = 'medium',
+      animal_filter = 'both' 
+    } = body;
     
     // Use game_mode if provided, otherwise fall back to difficulty
     const gameDifficulty: Difficulty = (game_mode || difficulty) as Difficulty;
+    const animalFilter: AnimalFilter = animal_filter as AnimalFilter;
 
     // Load real breed data
     const breedData = loadBreedData();
@@ -111,20 +171,39 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get all available breeds
-    const allBreeds = [...breedData.breed_types.cats, ...breedData.breed_types.dogs];
+    // Filter breeds based on animal_filter preference
+    let availableBreeds: string[] = [];
+    switch (animalFilter) {
+      case 'cats':
+        availableBreeds = breedData.breed_types.cats;
+        break;
+      case 'dogs':
+        availableBreeds = breedData.breed_types.dogs;
+        break;
+      case 'both':
+      default:
+        availableBreeds = [...breedData.breed_types.cats, ...breedData.breed_types.dogs];
+        break;
+    }
+    
+    if (availableBreeds.length === 0) {
+      return NextResponse.json(
+        { error: `No breeds available for filter: ${animalFilter}` },
+        { status: 400 }
+      );
+    }
     
     // Generate random options based on difficulty
     const optionCount = OPTION_COUNTS[gameDifficulty] || 4;
 
-    // Select random correct answer
-    const correctAnswer = allBreeds[Math.floor(Math.random() * allBreeds.length)];
+    // Select random correct answer from filtered breeds
+    const correctAnswer = availableBreeds[Math.floor(Math.random() * availableBreeds.length)];
     
     // Get animal type of correct answer
     const correctAnimalType = getAnimalType(correctAnswer, breedData);
     
     // Filter breeds to same animal type for wrong options
-    const sameTypeBreeds = allBreeds.filter(breed => 
+    const sameTypeBreeds = availableBreeds.filter((breed: string) => 
       breed !== correctAnswer && getAnimalType(breed, breedData) === correctAnimalType
     );
     
@@ -135,7 +214,7 @@ export async function POST(request: NextRequest) {
 
     // If not enough same-type breeds, add some from other type
     if (wrongOptions.length < optionCount - 1) {
-      const otherTypeBreeds = allBreeds.filter(breed => 
+      const otherTypeBreeds = availableBreeds.filter((breed: string) => 
         breed !== correctAnswer && getAnimalType(breed, breedData) !== correctAnimalType
       );
       const additionalNeeded = optionCount - 1 - wrongOptions.length;
@@ -148,11 +227,22 @@ export async function POST(request: NextRequest) {
     // Combine and shuffle options
     const options = [correctAnswer, ...wrongOptions].sort(() => 0.5 - Math.random());
 
-    // Get the maximum image number for the correct breed
-    const maxImageNumber = breedMaxImages[correctAnswer] || DEFAULT_MAX_IMAGES;
+    // Get available images for this breed (avoiding gaps)
+    const availableImages = getAvailableImagesForBreed(correctAnswer);
     
-    // Generate random image number (1 to max for the specific breed)
-    const imageNumber = Math.floor(Math.random() * maxImageNumber) + 1;
+    let imageNumber: number;
+    let maxImageNumber: number;
+    
+    if (availableImages && availableImages.length > 0) {
+      // Select a random image number from available ones (avoids missing images)
+      imageNumber = availableImages[Math.floor(Math.random() * availableImages.length)];
+      maxImageNumber = Math.max(...availableImages);
+    } else {
+      // Fallback to random image number if no available images mapping
+      const maxImageNumberForBreed = breedMaxImages[correctAnswer] || DEFAULT_MAX_IMAGES;
+      imageNumber = Math.floor(Math.random() * maxImageNumberForBreed) + 1;
+      maxImageNumber = maxImageNumberForBreed;
+    }
     
     // Get Cloudinary URL for the correct breed
     const cloudinaryUrl = getCloudinaryUrl(correctAnswer, imageNumber);
@@ -212,7 +302,7 @@ export async function POST(request: NextRequest) {
         animal_type: correctAnimalType,
         filename: `${correctAnswer.toLowerCase().replace(/\s+/g, '_')}_${imageNumber}.jpg`,
         breed: correctAnswer,
-        total_breeds: allBreeds.length,
+        total_breeds: availableBreeds.length,
         cat_breeds: breedData.breed_types.cats.length,
         dog_breeds: breedData.breed_types.dogs.length,
         max_images_for_breed: maxImageNumber

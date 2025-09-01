@@ -2,9 +2,7 @@
 export const config = {
   // API Configuration
   api: {
-    baseUrl: process.env.NODE_ENV === 'production' 
-      ? '' // Use relative URLs in production (same domain)
-      : 'http://127.0.0.1:5328', // Use 127.0.0.1 to match Flask server
+    baseUrl: '', // Use relative URLs (Next.js API routes)
     timeout: 30000, // 30 seconds
     retries: 3,
   },

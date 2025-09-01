@@ -25,6 +25,16 @@ interface EnhancedPetGameProps {
 }
 
 export default function EnhancedPetGame({ selectedModel, selectedModelName, user, onScoreUpdate }: EnhancedPetGameProps) {
+  // Get time limit based on game mode
+  const getTimeLimit = (mode: 'easy' | 'medium' | 'hard'): number => {
+    switch (mode) {
+      case 'easy': return 45  // More time for easy mode
+      case 'medium': return 30 // Standard time for medium
+      case 'hard': return 20   // Less time for hard mode
+      default: return 30
+    }
+  }
+
   const [gameState, setGameState] = useState<GameState | null>(null)
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null)
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null)
@@ -36,20 +46,10 @@ export default function EnhancedPetGame({ selectedModel, selectedModelName, user
   const [gameMode, setGameMode] = useState<'easy' | 'medium' | 'hard'>('medium')
   const [animalFilter, setAnimalFilter] = useState<'cats' | 'dogs' | 'both'>('both')
   const [showResults, setShowResults] = useState(false)
-  const [timeLeft, setTimeLeft] = useState(30)
+  const [timeLeft, setTimeLeft] = useState(getTimeLimit('medium'))
   const [isTimerActive, setIsTimerActive] = useState(false)
   const [imageLoading, setImageLoading] = useState(false)
   const [imageError, setImageError] = useState(false)
-
-  // Get time limit based on game mode
-  const getTimeLimit = (mode: 'easy' | 'medium' | 'hard'): number => {
-    switch (mode) {
-      case 'easy': return 45  // More time for easy mode
-      case 'medium': return 30 // Standard time for medium
-      case 'hard': return 20   // Less time for hard mode
-      default: return 30
-    }
-  }
 
 
 
@@ -68,7 +68,7 @@ export default function EnhancedPetGame({ selectedModel, selectedModelName, user
     setSelectedAnswer(null)
     setIsCorrect(null)
     setShowResults(false)
-    setTimeLeft(30)
+    setTimeLeft(getTimeLimit(gameMode))
     setIsTimerActive(false)
     setImageLoading(false)
     setImageError(false)
@@ -106,7 +106,7 @@ export default function EnhancedPetGame({ selectedModel, selectedModelName, user
         model_type: selectedModel,
         model_name: selectedModelName || undefined,
         game_mode: gameMode,
-        time_taken: 30 - timeLeft
+        time_taken: getTimeLimit(gameMode) - timeLeft
       })
       
       setIsCorrect(data.is_correct)
@@ -140,20 +140,22 @@ export default function EnhancedPetGame({ selectedModel, selectedModelName, user
     onScoreUpdate(score, totalQuestions + 1)
   }
 
-  const calculatePoints = (timeTaken: number, currentStreak: number, mode: string) => {
+  const calculatePoints = (timeTaken: number, currentStreak: number, mode: 'easy' | 'medium' | 'hard') => {
     const basePoints = 10
-    const timeBonus = Math.max(0, 30 - timeTaken) * 0.5
+    const timeLimit = getTimeLimit(mode)
+    const timeBonus = Math.max(0, timeLimit - timeTaken) * 0.5
     const streakBonus = Math.min(currentStreak * 2, 10)
     const modeMultiplier = mode === 'easy' ? 0.7 : mode === 'hard' ? 1.5 : 1.0
     
     return Math.round((basePoints + timeBonus + streakBonus) * modeMultiplier)
   }
 
-  const getDifficultyDescription = (mode: string) => {
+  const getDifficultyDescription = (mode: 'easy' | 'medium' | 'hard') => {
+    const timeLimit = getTimeLimit(mode)
     switch (mode) {
-      case 'easy': return 'Easy - 4 options, longer time'
-      case 'medium': return 'Medium - 4 options, normal time'
-      case 'hard': return 'Hard - 6 options, shorter time'
+      case 'easy': return `Easy - 4 options, ${timeLimit}s time limit`
+      case 'medium': return `Medium - 4 options, ${timeLimit}s time limit`
+      case 'hard': return `Hard - 6 options, ${timeLimit}s time limit`
       default: return 'Medium'
     }
   }

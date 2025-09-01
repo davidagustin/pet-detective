@@ -6,7 +6,6 @@ import Auth from '../components/Auth'
 import Leaderboard from '../components/Leaderboard'
 import DynamicModelSelector from '../components/DynamicModelSelector'
 import EnhancedPetGame from '../components/EnhancedPetGame'
-import ImageSegmentation from '../components/ImageSegmentation'
 import Settings from '../components/Settings'
 import Snackbar, { useSnackbar } from '../components/Snackbar'
 import { apiClient } from '../lib/api-client'
@@ -165,7 +164,6 @@ export default function Home() {
   const [selectedModel, setSelectedModel] = useState('resnet')
   const [selectedModelName, setSelectedModelName] = useState<string | null>(null)
   const [showDynamicModelSelector, setShowDynamicModelSelector] = useState(false)
-  const [showSegmentation, setShowSegmentation] = useState(false)
   const [predictions, setPredictions] = useState<{ [key: string]: number } | null>(null)
   const [isLoading, setIsLoading] = useLoadingState(false)
   const [error, setError] = useErrorState()
@@ -401,11 +399,10 @@ export default function Home() {
           <div className="flex flex-wrap gap-2">
             <button
               onClick={() => {
-                setShowSegmentation(false)
                 setShowDynamicModelSelector(false)
               }}
               className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                !showSegmentation && !showDynamicModelSelector
+                !showDynamicModelSelector
                   ? 'bg-blue-500 text-white'
                   : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-500'
               }`}
@@ -414,7 +411,6 @@ export default function Home() {
             </button>
             <button
               onClick={() => {
-                setShowSegmentation(false)
                 setShowDynamicModelSelector(true)
               }}
               className={`px-4 py-2 rounded-lg font-medium transition-colors ${
@@ -424,19 +420,6 @@ export default function Home() {
               }`}
             >
               🤖 Model Selection
-            </button>
-            <button
-              onClick={() => {
-                setShowSegmentation(true)
-                setShowDynamicModelSelector(false)
-              }}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                showSegmentation
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-500'
-              }`}
-            >
-              🔍 Image Segmentation
             </button>
           </div>
         </div>
@@ -452,12 +435,7 @@ export default function Home() {
         )}
 
         {/* Main Content */}
-        {showSegmentation ? (
-          /* Segmentation Section */
-          <div>
-            <ImageSegmentation />
-          </div>
-        ) : !showDynamicModelSelector ? (
+        {!showDynamicModelSelector ? (
           <div className="max-w-7xl mx-auto">
             {/* Game and Leaderboard Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -494,7 +472,7 @@ export default function Home() {
 
 
         {/* Game Stats */}
-        {!showSegmentation && !showDynamicModelSelector && (
+        {!showDynamicModelSelector && (
           <div className="mt-8 bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
             <h2 className="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-4">📊 Game Statistics</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

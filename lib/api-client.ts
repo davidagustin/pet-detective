@@ -129,13 +129,14 @@ class SecureAPIClient {
   }
 
   // Start game
-  async startGame(modelType: string, modelName?: string, gameMode: string = 'medium'): Promise<any> {
+  async startGame(modelType: string, modelName?: string, gameMode: string = 'medium', animalFilter: string = 'both'): Promise<any> {
     return this.request('/api/game/start', {
       method: 'POST',
       body: JSON.stringify({
         model_type: modelType,
         model_name: modelName,
         game_mode: gameMode,
+        animal_filter: animalFilter,
       }),
     })
   }
@@ -159,23 +160,6 @@ class SecureAPIClient {
   // Get leaderboard
   async getLeaderboard(): Promise<any> {
     return this.request('/api/leaderboard')
-  }
-
-  // Segment image
-  async segmentImage(file: File): Promise<any> {
-    return this.uploadFile('/api/segment', file)
-  }
-
-  // Train model (development only)
-  async trainModel(trainingParams: any): Promise<any> {
-    if (!config.features.enableTraining) {
-      throw new Error('Model training is not available in production')
-    }
-
-    return this.request('/api/train', {
-      method: 'POST',
-      body: JSON.stringify(trainingParams),
-    })
   }
 }
 

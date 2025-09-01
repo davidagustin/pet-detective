@@ -2,7 +2,6 @@ from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import os
 import json
-import threading
 import time
 from datetime import datetime
 from werkzeug.utils import secure_filename
@@ -13,216 +12,185 @@ from dotenv import load_dotenv
 load_dotenv('../.env.local')
 
 from pet_classifier import PetClassifier
-from train_model import train_pet_classifier
-from model_manager import ModelManager
-from pet_segmentation import get_segmentation_model
-from model_metadata import get_all_models, get_model_metadata, get_model_stats, update_model_usage
-from database_game import database_game_manager
-from validation import APIValidator, ValidationError as ValidatorError
-from error_handler import (
+from utils.model_manager import ModelManager
+from utils.model_metadata import get_all_models, get_model_metadata, get_model_stats, update_model_usage
+from utils.validation import APIValidator, ValidationError as ValidatorError
+from utils.error_handler import (
     error_handler, validate_content_type, validate_json_size, require_fields,
     register_error_handlers, log_model_usage, APIError, ValidationError,
     AuthenticationError, SecurityError, logger
 )
-import asyncio
 
 app = Flask(__name__)
 
-# Configure CORS with environment-based origins
-allowed_origins = os.getenv('CORS_ORIGINS', 'http://localhost:3000').split(',')
-CORS(app, 
-     origins=allowed_origins,
-     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-     allow_headers=["Content-Type", "Authorization", "X-Requested-With", "X-CSRF-Token"],
-     supports_credentials=True,
-     expose_headers=["Content-Range", "X-Content-Range"])
+# Configure CORS
+CORS(app, resources={
+    r"/api/*": {
+        "origins": ["http://localhost:3000", "http://localhost:5000"],
+        "methods": ["GET", "POST", "OPTIONS"],
+        "allow_headers": ["Content-Type", "X-CSRF-Token", "X-Requested-With"],
+        "expose_headers": ["Content-Type"],
+        "supports_credentials": True,
+        "max_age": 3600
+    }
+})
 
 # Register error handlers
 register_error_handlers(app)
 
-@app.route('/api/health', methods=['GET'])
-@error_handler
-def health_check():
-    """Health check endpoint with comprehensive status"""
-    try:
-        # Check database connectivity (if available)
-        db_status = 'unknown'
-        if SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY:
-            try:
-                import requests
-                response = requests.get(
-                    f'{SUPABASE_URL}/rest/v1/',
-                    headers={'apikey': SUPABASE_SERVICE_ROLE_KEY},
-                    timeout=5
-                )
-                db_status = 'connected' if response.status_code == 200 else 'error'
-            except Exception:
-                db_status = 'error'
-        
-        # Check model availability
-        model_status = 'available' if os.path.exists('../models') else 'unavailable'
-        
-        return jsonify({
-            'status': 'healthy',
-            'message': 'Pet Detective API is running',
-            'timestamp': datetime.now().isoformat(),
-            'version': '1.0.0',
-            'components': {
-                'database': db_status,
-                'models': model_status,
-                'classifiers_loaded': len(classifiers)
-            }
-        })
-    except Exception as e:
-        raise APIError(f"Health check failed: {str(e)}")
-
 # Initialize model manager
 model_manager = ModelManager()
 
-# Global classifiers dictionary for multiple models
+# Initialize API validator
+validator = APIValidator()
+
+# Dictionary to store loaded classifiers
 classifiers = {}
 
-# Supabase configuration
-SUPABASE_URL = os.getenv('SUPABASE_URL')
-SUPABASE_SERVICE_ROLE_KEY = os.getenv('SUPABASE_SERVICE_ROLE_KEY')
-
-# Create models directory if it doesn't exist
-os.makedirs('../models', exist_ok=True)
+# Initialize default classifier with error handling
+try:
+    # Try to load the improved safetensors model
+    improved_model_path = os.path.join('..', 'models', 'resnet_model_improved.safetensors')
+    if os.path.exists(improved_model_path):
+        classifiers['resnet'] = PetClassifier(model_type='resnet', model_path=improved_model_path)
+        print("Loaded improved ResNet model from safetensors")
+    else:
+        # Fall back to basic model
+        classifiers['resnet'] = PetClassifier(model_type='resnet')
+        print("Loaded default ResNet model")
+except Exception as e:
+    print(f"Warning: Could not initialize default classifier: {e}")
+    classifiers['resnet'] = PetClassifier(model_type='resnet')
 
 def scan_models_directory():
-    """Scan models directory for available trained models"""
-    available_models = {}
+    """Scan the models directory for available models with secure validation"""
+    models_dir = 'models'
+    if not os.path.exists(models_dir):
+        os.makedirs(models_dir)
     
-    # Debug: Print current working directory and models path
-    print(f"Current working directory: {os.getcwd()}")
-    models_path = '../models'
-    print(f"Looking for models in: {os.path.abspath(models_path)}")
-    print(f"Models directory exists: {os.path.exists(models_path)}")
-    if os.path.exists(models_path):
-        print(f"Files in models directory: {os.listdir(models_path)}")
+    available_models = []
+    model_types = set()
     
-    model_types = {
-        'resnet': {
-            'name': 'ResNet-50',
-            'description': 'Deep residual network with 50 layers',
-            'architecture': 'ResNet-50',
-            'parameters': '25.6M',
-            'accuracy': '95%+',
-            'speed': 'Medium',
-            'strengths': ['High accuracy', 'Good generalization'],
-            'weaknesses': ['Slower inference', 'Larger model size']
-        },
-        'alexnet': {
-            'name': 'AlexNet',
-            'description': 'Classic CNN architecture',
-            'architecture': 'AlexNet',
-            'parameters': '61M',
-            'accuracy': '90%+',
-            'speed': 'Fast',
-            'strengths': ['Fast inference', 'Proven architecture'],
-            'weaknesses': ['Lower accuracy', 'Older architecture']
-        },
-        'mobilenet': {
-            'name': 'MobileNet V2',
-            'description': 'Lightweight mobile-optimized network',
-            'architecture': 'MobileNet V2',
-            'parameters': '3.5M',
-            'accuracy': '92%+',
-            'speed': 'Very Fast',
-            'strengths': ['Fast inference', 'Small model size'],
-            'weaknesses': ['Slightly lower accuracy']
+    # Validate directory access
+    if not os.access(models_dir, os.R_OK):
+        raise SecurityError('Cannot access models directory')
+    
+    for filename in os.listdir(models_dir):
+        # Security: Validate filename
+        if not APIValidator.validate_filename(filename):
+            logger.warning(f"Skipping suspicious filename: {filename}")
+            continue
+            
+        if filename.endswith(('.pth', '.pt', '.pkl', '.safetensors')):
+            # Validate file size
+            file_path = os.path.join(models_dir, filename)
+            file_size = os.path.getsize(file_path)
+            
+            if file_size > validator.MAX_FILE_SIZE * 10:  # Allow larger model files
+                logger.warning(f"Model file too large: {filename} ({file_size} bytes)")
+                continue
+            
+            model_info = {
+                'name': filename,
+                'path': file_path,
+                'size': file_size,
+                'modified': os.path.getmtime(file_path)
+            }
+            
+            # Try to extract model type from filename
+            if 'resnet' in filename.lower():
+                model_info['type'] = 'resnet'
+                model_types.add('resnet')
+            elif 'efficientnet' in filename.lower():
+                model_info['type'] = 'efficientnet'
+                model_types.add('efficientnet')
+            else:
+                model_info['type'] = 'unknown'
+            
+            available_models.append(model_info)
+    
+    return available_models, list(model_types)
+
+@app.route('/api/health', methods=['GET'])
+def health_check():
+    """Health check endpoint with system status"""
+    try:
+        # Check model availability
+        model_status = 'healthy' if classifiers else 'degraded'
+        
+        # Get system stats
+        system_stats = {
+            'models_loaded': len(classifiers),
+            'api_version': '2.0.0',
+            'timestamp': datetime.utcnow().isoformat()
         }
-    }
-    
-    if os.path.exists(models_path):
-        for filename in os.listdir(models_path):
-            if (filename.endswith(('.pth', '.safetensors')) or '.safetensors.' in filename) and not filename.endswith('.json'):
-                filepath = os.path.join(models_path, filename)
-                stat = os.stat(filepath)
-                
-                # Try to determine model type from filename
-                model_type = 'unknown'
-                if 'resnet' in filename.lower():
-                    model_type = 'resnet'
-                elif 'alexnet' in filename.lower():
-                    model_type = 'alexnet'
-                elif 'mobilenet' in filename.lower():
-                    model_type = 'mobilenet'
-                
-                # Determine format
-                file_format = 'safetensors' if ('.safetensors' in filename) else 'pytorch'
-                
-                # Try to load metadata from JSON file if it exists
-                json_filename = f"{filename}.json"
-                json_filepath = os.path.join(models_path, json_filename)
-                metadata = None
-                if os.path.exists(json_filepath):
-                    try:
-                        with open(json_filepath, 'r') as f:
-                            metadata = json.load(f)
-                    except Exception as e:
-                        print(f"Warning: Could not load metadata for {filename}: {e}")
-                
-                model_info = {
-                    'name': filename,
-                    'type': model_type,
-                    'format': file_format,
-                    'path': filepath,
-                    'size_mb': round(stat.st_size / (1024 * 1024), 2),
-                    'created': int(stat.st_ctime),
-                    'modified': int(stat.st_mtime),
-                    'has_metadata': metadata is not None
-                }
-                
-                # Add metadata if available
-                if metadata and 'model_info' in metadata:
-                    model_info.update({
-                        'accuracy': metadata['model_info'].get('performance_metrics', {}).get('accuracy', 'Unknown'),
-                        'training_epochs': metadata['model_info'].get('training_info', {}).get('epochs_trained', 'Unknown'),
-                        'description': metadata['model_info'].get('description', 'No description available'),
-                        'version': metadata['model_info'].get('version', 'Unknown')
-                    })
-                else:
-                    model_info.update({
-                        'accuracy': 'Unknown',
-                        'training_epochs': 'Unknown', 
-                        'description': 'No metadata available',
-                        'version': 'Unknown'
-                    })
-                
-                available_models[filename] = model_info
-    
-    return available_models, model_types
+        
+        return jsonify({
+            'status': model_status,
+            'message': 'Pet Detective API is running',
+            'stats': system_stats
+        })
+    except Exception as e:
+        logger.error(f"Health check failed: {e}")
+        return jsonify({
+            'status': 'unhealthy',
+            'error': str(e)
+        }), 500
 
 @app.route('/api/predict', methods=['POST'])
 @error_handler
-@validate_content_type(['multipart/form-data'])
 def predict():
     """Predict pet breed from uploaded image with comprehensive validation"""
     temp_path = None
-    
     try:
-        # Validate image file
+        # Check if image is in request
         if 'image' not in request.files:
-            raise ValidationError('No image file provided in request')
+            # Check for image URL in JSON body
+            data = request.get_json()
+            if data and 'image_url' in data:
+                return jsonify({'error': 'URL-based prediction not supported in this version'}), 400
+            raise ValidationError('No image provided')
         
         file = request.files['image']
-        if not file or not file.filename:
+        
+        # Validate file
+        if file.filename == '':
             raise ValidationError('No file selected')
         
-        # Validate and sanitize inputs
-        filename, file_content = APIValidator.validate_image_file(file)
-        model_type = APIValidator.validate_model_type(request.form.get('model_type', 'resnet'))
-        model_name = None
-        if request.form.get('model_name'):
-            model_name = APIValidator.sanitize_string(request.form.get('model_name'), max_length=100)
+        # Security: Validate file extension and content
+        if not APIValidator.validate_file_extension(file.filename, validator.ALLOWED_EXTENSIONS):
+            raise ValidationError(f'Invalid file type. Allowed: {", ".join(validator.ALLOWED_EXTENSIONS)}')
         
         # Generate secure temporary filename
-        temp_path = APIValidator.generate_secure_filename(filename)
+        timestamp = int(time.time() * 1000)
+        file_hash = hashlib.md5(file.filename.encode()).hexdigest()[:8]
+        filename = secure_filename(file.filename)
+        temp_path = f'temp_{timestamp}_{file_hash}_{filename}'
         
-        # Save file with validated content
-        with open(temp_path, 'wb') as f:
-            f.write(file_content)
+        # Save and validate file size
+        file.save(temp_path)
+        file_size = os.path.getsize(temp_path)
+        
+        if file_size > validator.MAX_FILE_SIZE:
+            os.remove(temp_path)
+            raise ValidationError(f'File too large. Maximum size: {validator.MAX_FILE_SIZE // (1024*1024)}MB')
+        
+        # Validate it's actually an image
+        if not APIValidator.validate_image_file(temp_path):
+            os.remove(temp_path)
+            raise ValidationError('Invalid image file')
+        
+        # Get model parameters with validation
+        model_type = APIValidator.validate_model_type(
+            request.form.get('model_type', 'resnet')
+        )
+        
+        model_name = None
+        if 'model_name' in request.form:
+            model_name = APIValidator.sanitize_string(
+                request.form.get('model_name'),
+                max_length=100
+            )
         
         # Get or create classifier
         model_key = f"{model_type}_{model_name}" if model_name else model_type
@@ -232,24 +200,12 @@ def predict():
                 model_path = os.path.join('models', model_name)
                 if not os.path.exists(model_path):
                     raise ValidationError(f'Model not found: {model_name}')
-            else:
-                # Use the existing safetensors model by default
-                default_model_path = os.path.join('..', 'models', 'resnet_model.safetensors')
-                if os.path.exists(default_model_path):
-                    model_path = default_model_path
-            
-            try:
-                classifiers[model_key] = PetClassifier(model_type=model_type, model_path=model_path)
-            except Exception as e:
-                raise APIError(f'Failed to load model: {model_type}')
+            classifiers[model_key] = PetClassifier(model_type=model_type, model_path=model_path)
         
         classifier = classifiers[model_key]
         
-        # Make prediction with error handling
-        try:
-            predictions = classifier.predict(temp_path)
-        except Exception as e:
-            raise APIError('Prediction failed - invalid image or model error')
+        # Make prediction with timeout
+        predictions = classifier.predict(temp_path)
         
         # Log model usage
         log_model_usage(model_type, model_name, 'prediction')
@@ -283,54 +239,29 @@ def start_game():
         # Validate and sanitize inputs
         model_type = APIValidator.validate_model_type(data.get('model_type', 'resnet'))
         game_mode = APIValidator.validate_game_mode(data.get('game_mode', 'medium'))
-        animal_type = APIValidator.validate_animal_type(data.get('animal_type'))
         
         model_name = None
         if data.get('model_name'):
             model_name = APIValidator.sanitize_string(data.get('model_name'), max_length=100)
         
-        # Try to use database-driven game first
-        try:
-            # Create a new event loop for the async function
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            game_data = loop.run_until_complete(
-                database_game_manager.generate_game_question(game_mode=game_mode, animal_type=animal_type)
-            )
-            loop.close()
+        # Get or create classifier with default safetensors model
+        model_key = f"{model_type}_{model_name}" if model_name else model_type
+        if model_key not in classifiers:
+            model_path = None
+            if model_name:
+                model_path = os.path.join('models', model_name)
+            else:
+                # Use the existing safetensors model by default
+                default_model_path = os.path.join('..', 'models', 'resnet_model.safetensors')
+                if os.path.exists(default_model_path):
+                    model_path = default_model_path
             
-            # Add AI prediction using the classifier if we have one
-            model_key = f"{model_type}_{model_name}" if model_name else model_type
-            if model_key in classifiers:
-                classifier = classifiers[model_key]
-                # Note: We can't easily predict from URL, so we'll trust the database
-                # In production, you might want to download and predict
-                pass
-            
-            return jsonify(game_data)
-            
-        except Exception as db_error:
-            print(f"Database game generation failed: {db_error}")
-            # Fall back to old filesystem-based method
-            
-            # Get or create classifier with default safetensors model
-            model_key = f"{model_type}_{model_name}" if model_name else model_type
-            if model_key not in classifiers:
-                model_path = None
-                if model_name:
-                    model_path = os.path.join('models', model_name)
-                else:
-                    # Use the existing safetensors model by default
-                    default_model_path = os.path.join('..', 'models', 'resnet_model.safetensors')
-                    if os.path.exists(default_model_path):
-                        model_path = default_model_path
-                
-                classifiers[model_key] = PetClassifier(model_type=model_type, model_path=model_path)
-            
-            classifier = classifiers[model_key]
-            
-            # Generate game question using old method
-            game_data = classifier.generate_game_question(game_mode=game_mode)
+            classifiers[model_key] = PetClassifier(model_type=model_type, model_path=model_path)
+        
+        classifier = classifiers[model_key]
+        
+        # Generate game question
+        game_data = classifier.generate_game_question(game_mode=game_mode)
         
         # Add caching headers for game data
         response = jsonify(game_data)
@@ -353,138 +284,34 @@ def check_answer():
     try:
         data = request.get_json()
         
-        # Validate and sanitize score data
-        validated_data = APIValidator.validate_score_data(data)
+        # Validate and sanitize inputs
+        user_answer = APIValidator.sanitize_string(data['user_answer'], max_length=100)
+        correct_answer = APIValidator.sanitize_string(data['correct_answer'], max_length=100)
+        user_id = APIValidator.sanitize_string(data['user_id'], max_length=100)
         
-        user_answer = validated_data['user_answer']
-        correct_answer = validated_data['correct_answer']
-        user_id = validated_data['user_id']
-        username = validated_data.get('username')
-        model_type = validated_data.get('model_type', 'resnet')
-        model_name = validated_data.get('model_name')
-        game_mode = validated_data.get('game_mode', 'medium')
-        time_taken = validated_data.get('time_taken', 0)
+        # Check answer
+        is_correct = user_answer.lower().strip() == correct_answer.lower().strip()
         
-        is_correct = user_answer.lower() == correct_answer.lower()
+        # Track score
+        score_key = f"score_{user_id}"
+        if score_key not in app.config:
+            app.config[score_key] = {'correct': 0, 'total': 0}
         
-        # Save score to Supabase if user is authenticated
-        if user_id and SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY:
-            try:
-                import requests
-                
-                score_data = {
-                    'user_id': user_id,
-                    'username': username,
-                    'score': 10 if is_correct else 0,
-                    'is_correct': is_correct,
-                    'model_type': model_type,
-                    'model_name': model_name,
-                    'game_mode': game_mode,
-                    'time_taken': time_taken,
-                    'created_at': datetime.utcnow().isoformat()
-                }
-                
-                headers = {
-                    'apikey': SUPABASE_SERVICE_ROLE_KEY,
-                    'Authorization': f'Bearer {SUPABASE_SERVICE_ROLE_KEY}',
-                    'Content-Type': 'application/json'
-                }
-                
-                response = requests.post(
-                    f'{SUPABASE_URL}/rest/v1/leaderboard',
-                    headers=headers,
-                    json=score_data
-                )
-                
-                if response.status_code != 201:
-                    print(f"Failed to save score: {response.text}")
-            
-            except Exception as e:
-                print(f"Error saving score to Supabase: {e}")
+        app.config[score_key]['total'] += 1
+        if is_correct:
+            app.config[score_key]['correct'] += 1
+        
+        # Calculate accuracy
+        accuracy = (app.config[score_key]['correct'] / app.config[score_key]['total']) * 100
         
         return jsonify({
-            'is_correct': is_correct,
+            'correct': is_correct,
+            'user_answer': user_answer,
             'correct_answer': correct_answer,
-            'time_taken': time_taken
+            'score': app.config[score_key]['correct'],
+            'total': app.config[score_key]['total'],
+            'accuracy': round(accuracy, 2)
         })
-    
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/train', methods=['POST'])
-def train_model():
-    try:
-        data = request.get_json()
-        
-        # Generate unique model name
-        timestamp = int(time.time())
-        model_type = data.get('model_type', 'resnet')
-        model_name = f"{model_type}_model_{timestamp}.pth"
-        model_path = os.path.join('models', model_name)
-        
-        # Start training in background thread
-        def train_thread():
-            try:
-                train_pet_classifier(
-                    model_type=data.get('model_type', 'resnet'),
-                    epochs=data.get('epochs', 5),
-                    batch_size=data.get('batch_size', 32),
-                    learning_rate=data.get('learning_rate', 0.001),
-                    scheduler_type=data.get('scheduler_type', 'cosine'),
-                    weight_decay=data.get('weight_decay', 1e-4),
-                    dropout_rate=data.get('dropout_rate', 0.5),
-                    early_stopping_patience=data.get('early_stopping_patience', 5),
-                    enable_tuning=data.get('enable_tuning', False),
-                    tuning_method=data.get('tuning_method', 'optuna'),
-                    n_trials=data.get('n_trials', 10),
-                    model_path=model_path,
-                    model_manager=model_manager
-                )
-            except Exception as e:
-                print(f"Training error: {e}")
-        
-        thread = threading.Thread(target=train_thread)
-        thread.daemon = True
-        thread.start()
-        
-        return jsonify({
-            'message': 'Training started',
-            'model_name': model_name,
-            'model_path': model_path
-        })
-    
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/segment', methods=['POST'])
-def segment_image():
-    try:
-        if 'image' not in request.files:
-            return jsonify({'error': 'No image provided'}), 400
-        
-        file = request.files['image']
-        
-        if file.filename == '':
-            return jsonify({'error': 'No file selected'}), 400
-        
-        # Save uploaded image temporarily
-        filename = secure_filename(file.filename)
-        temp_path = f'temp_seg_{int(time.time())}_{filename}'
-        file.save(temp_path)
-        
-        try:
-            # Get segmentation model
-            segmentation_model = get_segmentation_model()
-            
-            # Process image
-            result = segmentation_model.segment_and_encode(temp_path)
-            
-            return jsonify(result)
-        
-        finally:
-            # Clean up temporary file
-            if os.path.exists(temp_path):
-                os.remove(temp_path)
     
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -507,147 +334,52 @@ def get_models_metadata():
     """Get detailed metadata for all models"""
     try:
         models = get_all_models()
-        metadata_list = []
-        
-        for model in models:
-            metadata_dict = {
-                'name': model.name,
-                'file_path': model.file_path,
-                'format': model.format,
-                'model_type': model.model_type,
-                'file_size_mb': model.file_size_mb,
-                'num_parameters': model.num_parameters,
-                'validation_accuracy': model.validation_accuracy,
-                'training_accuracy': model.training_accuracy,
-                'training_epochs': model.training_epochs,
-                'learning_rate': model.learning_rate,
-                'optimizer': model.optimizer,
-                'scheduler': model.scheduler,
-                'weight_decay': model.weight_decay,
-                'dropout_rate': model.dropout_rate,
-                'training_duration_seconds': model.training_duration_seconds,
-                'device_used': model.device_used,
-                'hyperparameter_tuning': model.hyperparameter_tuning,
-                'tuning_method': model.tuning_method,
-                'usage_count': model.usage_count,
-                'last_used': model.last_used,
-                'average_inference_time': model.average_inference_time,
-                'created_timestamp': model.created_timestamp,
-                'modified_timestamp': model.modified_timestamp,
-                'file_hash': model.file_hash,
-                'is_active': model.is_active,
-                'is_public': model.is_public
-            }
-            metadata_list.append(metadata_dict)
-        
-        return jsonify({
-            'models': metadata_list,
-            'total_count': len(metadata_list)
-        })
+        return jsonify({'models': models})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/models/metadata/<model_name>', methods=['GET'])
-def get_model_metadata_endpoint(model_name):
-    """Get detailed metadata for a specific model"""
+@app.route('/api/models/<model_name>/stats', methods=['GET'])
+def get_model_statistics(model_name):
+    """Get usage statistics for a specific model"""
     try:
-        metadata = get_model_metadata(model_name)
-        if not metadata:
+        # Validate model name
+        model_name = APIValidator.sanitize_string(model_name, max_length=100)
+        stats = get_model_stats(model_name)
+        
+        if not stats:
             return jsonify({'error': 'Model not found'}), 404
         
-        metadata_dict = {
-            'name': metadata.name,
-            'file_path': metadata.file_path,
-            'format': metadata.format,
-            'model_type': metadata.model_type,
-            'file_size_mb': metadata.file_size_mb,
-            'num_parameters': metadata.num_parameters,
-            'validation_accuracy': metadata.validation_accuracy,
-            'training_accuracy': metadata.training_accuracy,
-            'training_epochs': metadata.training_epochs,
-            'learning_rate': metadata.learning_rate,
-            'optimizer': metadata.optimizer,
-            'scheduler': metadata.scheduler,
-            'weight_decay': metadata.weight_decay,
-            'dropout_rate': metadata.dropout_rate,
-            'training_duration_seconds': metadata.training_duration_seconds,
-            'device_used': metadata.device_used,
-            'hyperparameter_tuning': metadata.hyperparameter_tuning,
-            'tuning_method': metadata.tuning_method,
-            'best_hyperparameters': metadata.best_hyperparameters,
-            'usage_count': metadata.usage_count,
-            'last_used': metadata.last_used,
-            'average_inference_time': metadata.average_inference_time,
-            'created_timestamp': metadata.created_timestamp,
-            'modified_timestamp': metadata.modified_timestamp,
-            'file_hash': metadata.file_hash,
-            'description': metadata.description,
-            'tags': metadata.tags,
-            'version': metadata.version,
-            'author': metadata.author,
-            'is_active': metadata.is_active,
-            'is_public': metadata.is_public,
-            'requires_auth': metadata.requires_auth
-        }
-        
-        return jsonify(metadata_dict)
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/models/stats', methods=['GET'])
-def get_models_stats():
-    """Get overall statistics about all models"""
-    try:
-        stats = get_model_stats()
         return jsonify(stats)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/images/<path:filename>')
-def serve_image(filename):
-    """Serve images from the images directory with caching and optimization"""
-    try:
-        # Security check - prevent directory traversal
-        if '..' in filename or filename.startswith('/'):
-            return jsonify({'error': 'Invalid filename'}), 400
-        
-        # Add caching headers for better performance
-        response = send_from_directory('../images', filename)
-        response.headers['Cache-Control'] = 'public, max-age=31536000'  # 1 year cache
-        response.headers['ETag'] = hashlib.md5(filename.encode()).hexdigest()
-        return response
-    except Exception as e:
-        return jsonify({'error': f'Image not found: {filename}'}), 404
-
 @app.route('/api/leaderboard', methods=['GET'])
 def get_leaderboard():
+    """Get game leaderboard with mock data"""
     try:
-        if not SUPABASE_URL or not SUPABASE_SERVICE_ROLE_KEY:
-            return jsonify({'error': 'Supabase not configured'}), 500
-        
-        import requests
-        
-        headers = {
-            'apikey': SUPABASE_SERVICE_ROLE_KEY,
-            'Authorization': f'Bearer {SUPABASE_SERVICE_ROLE_KEY}',
-            'Content-Type': 'application/json'
+        # Mock leaderboard data for now
+        mock_leaderboard = {
+            'allTime': [
+                {'id': '1', 'username': 'PetMaster', 'score': 950, 'total_questions': 100, 'accuracy': 95},
+                {'id': '2', 'username': 'AnimalLover', 'score': 920, 'total_questions': 100, 'accuracy': 92},
+                {'id': '3', 'username': 'BreedExpert', 'score': 880, 'total_questions': 100, 'accuracy': 88},
+            ],
+            'daily': [],
+            'weekly': []
         }
-        
-        response = requests.get(
-            f'{SUPABASE_URL}/rest/v1/leaderboard?select=*&order=score.desc&limit=50',
-            headers=headers
-        )
-        
-        if response.status_code == 200:
-            return jsonify(response.json())
-        else:
-            return jsonify({'error': 'Failed to fetch leaderboard'}), 500
-    
+        return jsonify(mock_leaderboard)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# For Vercel deployment
-app.debug = False
+# Serve React app in production
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
+def serve_react_app(path):
+    if path != "" and os.path.exists(os.path.join('..', 'build', path)):
+        return send_from_directory(os.path.join('..', 'build'), path)
+    else:
+        return send_from_directory(os.path.join('..', 'build'), 'index.html')
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5328)
+    port = int(os.environ.get('PORT', 5328))
+    app.run(host='0.0.0.0', port=port, debug=True)

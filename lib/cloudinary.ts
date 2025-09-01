@@ -63,7 +63,8 @@ export const getCloudinaryImageUrl = (
   }
 
   const transformationString = transformations.length > 0 ? transformations.join(',') + '/' : '';
-  return `https://res.cloudinary.com/${cloudName}/image/upload/${transformationString}${publicId}`;
+  // Use versioning for better caching and consistency
+  return `https://res.cloudinary.com/${cloudName}/image/upload/v1756482370/${transformationString}${publicId}`;
 };
 
 export const getCloudinaryVideoUrl = (
@@ -89,7 +90,8 @@ export const getCloudinaryVideoUrl = (
   }
 
   const transformationString = transformations.length > 0 ? transformations.join(',') + '/' : '';
-  return `https://res.cloudinary.com/${cloudName}/video/upload/${transformationString}${publicId}`;
+  // Use versioning for better caching and consistency
+  return `https://res.cloudinary.com/${cloudName}/video/upload/v1756482370/${transformationString}${publicId}`;
 };
 
 export const getCloudinaryAssetUrl = (

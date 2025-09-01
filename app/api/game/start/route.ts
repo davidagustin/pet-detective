@@ -1,9 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+export async function GET(request: NextRequest) {
+  return NextResponse.json({ 
+    message: 'Game start API is working',
+    method: 'GET',
+    timestamp: new Date().toISOString()
+  });
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { model_type = 'resnet50', model_name, difficulty = 'medium' } = body;
+    const { model_type = 'resnet50', model_name, game_mode = 'medium', difficulty = 'medium' } = body;
+    
+    // Use game_mode if provided, otherwise fall back to difficulty
+    const gameDifficulty = game_mode || difficulty;
 
     // Since we don't have the actual Flask API in production, 
     // we'll return mock game data with Cloudinary images
@@ -15,7 +26,7 @@ export async function POST(request: NextRequest) {
 
     // Generate random options based on difficulty
     const optionCounts = { easy: 4, medium: 4, hard: 6 };
-    const optionCount = optionCounts[difficulty as keyof typeof optionCounts] || 4;
+    const optionCount = optionCounts[gameDifficulty as keyof typeof optionCounts] || 4;
 
     // Select random correct answer
     const correctAnswer = mockBreeds[Math.floor(Math.random() * mockBreeds.length)];

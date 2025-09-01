@@ -1,6 +1,10 @@
 'use client'
 
 import { useState, useEffect, Suspense } from 'react'
+
+// Force dynamic rendering to prevent static generation issues
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
 import { createClient } from '@supabase/supabase-js'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { config } from '../../../lib/config'

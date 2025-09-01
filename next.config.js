@@ -28,6 +28,8 @@ const nextConfig = {
   experimental: {
     scrollRestoration: true,
   },
+  // Disable static generation for pages with client-side interactivity
+  trailingSlash: false,
   // Output standalone for better deployment (commented out for Vercel)
   // output: 'standalone',
 }

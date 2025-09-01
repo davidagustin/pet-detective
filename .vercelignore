@@ -6,10 +6,10 @@ venv/
 __pycache__/
 
 # Large model files (should be served externally)
-models/
-*.safetensors
-*.pth
-*.pt
+# models/ - REMOVED: Models are needed for AI competition
+# *.safetensors - REMOVED: Model files are needed
+# *.pth - REMOVED: Model files are needed
+# *.pt - REMOVED: Model files are needed
 *.pkl
 *.bin
 *.h5

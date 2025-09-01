@@ -1,6 +1,6 @@
 # Python files and API (not needed for frontend deployment)
-api/
-*.py
+api/*.py
+api/utils/
 requirements.txt
 venv/
 __pycache__/

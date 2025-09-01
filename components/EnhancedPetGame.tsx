@@ -31,11 +31,25 @@ export default function EnhancedPetGame({ selectedModel, selectedModelName, user
   const [isLoading, setIsLoading] = useState(false)
   const [score, setScore] = useState(0)
   const [totalQuestions, setTotalQuestions] = useState(0)
+  const [correctAnswers, setCorrectAnswers] = useState(0)
   const [streak, setStreak] = useState(0)
   const [gameMode, setGameMode] = useState<'easy' | 'medium' | 'hard'>('medium')
+  const [animalFilter, setAnimalFilter] = useState<'cats' | 'dogs' | 'both'>('both')
   const [showResults, setShowResults] = useState(false)
   const [timeLeft, setTimeLeft] = useState(30)
   const [isTimerActive, setIsTimerActive] = useState(false)
+  const [imageLoading, setImageLoading] = useState(false)
+  const [imageError, setImageError] = useState(false)
+
+  // Get time limit based on game mode
+  const getTimeLimit = (mode: 'easy' | 'medium' | 'hard'): number => {
+    switch (mode) {
+      case 'easy': return 45  // More time for easy mode
+      case 'medium': return 30 // Standard time for medium
+      case 'hard': return 20   // Less time for hard mode
+      default: return 30
+    }
+  }
 
 
 
@@ -56,9 +70,13 @@ export default function EnhancedPetGame({ selectedModel, selectedModelName, user
     setShowResults(false)
     setTimeLeft(30)
     setIsTimerActive(false)
+    setImageLoading(false)
+    setImageError(false)
 
     try {
-      const data = await apiClient.startGame(selectedModel, selectedModelName || undefined, gameMode)
+      console.log('Starting game with animal filter:', animalFilter)
+      const data = await apiClient.startGame(selectedModel, selectedModelName || undefined, gameMode, animalFilter)
+      console.log('Game data received:', data.imageMetadata)
       setGameState(data)
       setIsTimerActive(true)
     } catch (error: unknown) {
@@ -99,6 +117,7 @@ export default function EnhancedPetGame({ selectedModel, selectedModelName, user
         setStreak(newStreak)
         const points = calculatePoints(data.time_taken, newStreak, gameMode)
         setScore(score + points)
+        setCorrectAnswers(correctAnswers + 1)
       } else {
         setStreak(0)
       }
@@ -219,6 +238,37 @@ export default function EnhancedPetGame({ selectedModel, selectedModelName, user
         <p className="text-xs text-gray-500 mt-1">{getDifficultyDescription(gameMode)}</p>
       </div>
 
+      {/* Animal Filter Selection */}
+      <div className="mb-6">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Animal Type:</label>
+        <div className="flex space-x-2">
+          {(['cats', 'dogs', 'both'] as const).map((filter) => (
+            <button
+              key={filter}
+              onClick={() => {
+                console.log('Setting animal filter to:', filter)
+                setAnimalFilter(filter)
+              }}
+              disabled={gameState !== null || isLoading}
+              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                animalFilter === filter
+                  ? 'bg-green-500 text-white'
+                  : gameState !== null || isLoading
+                  ? 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-300 dark:hover:bg-gray-500'
+              }`}
+            >
+              {filter === 'cats' ? '🐱 Cats Only' : filter === 'dogs' ? '🐕 Dogs Only' : '🐾 Both'}
+            </button>
+          ))}
+        </div>
+        <p className="text-xs text-gray-500 mt-1">
+          {animalFilter === 'cats' ? 'Quiz will only show cat breeds' : 
+           animalFilter === 'dogs' ? 'Quiz will only show dog breeds' : 
+           'Quiz will show both cats and dogs'}
+        </p>
+      </div>
+
       {/* Game Area */}
       {!gameState ? (
         <div className="text-center py-8">
@@ -300,16 +350,48 @@ export default function EnhancedPetGame({ selectedModel, selectedModelName, user
           </div>
 
           {/* Game Image */}
-          <div className="relative">
-            <Image
-              src={gameState.image}
-              alt="Pet to guess"
-              width={800}
-              height={600}
-              className="w-full h-80 object-cover rounded-lg shadow-md"
-              priority
-              unoptimized
-            />
+          <div className="relative bg-gray-100 dark:bg-gray-900 rounded-lg shadow-md overflow-hidden">
+            <div className="flex justify-center items-center min-h-[280px] sm:min-h-[320px] max-h-[400px] p-2 sm:p-4">
+              {imageLoading && (
+                <div className="flex flex-col items-center justify-center space-y-2">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                  <span className="text-sm text-gray-600 dark:text-gray-400">Loading image...</span>
+                </div>
+              )}
+              {imageError && (
+                <div className="flex flex-col items-center justify-center space-y-2 text-gray-500 dark:text-gray-400">
+                  <div className="text-4xl">🖼️</div>
+                  <div className="text-sm">Image could not be loaded</div>
+                  <div className="text-xs">Please try again</div>
+                </div>
+              )}
+                            {!imageLoading && !imageError && (
+                <img
+                  src={gameState.image}
+                  alt="Pet to guess"
+                  className="max-w-full max-h-full w-auto h-auto object-contain rounded-lg transition-all duration-200 hover:scale-105"
+                  style={{
+                    maxHeight: 'min(360px, 60vh)',
+                    maxWidth: '100%'
+                  }}
+                  onLoadStart={() => setImageLoading(true)}
+                  onLoad={(e) => {
+                    setImageLoading(false)
+                    setImageError(false)
+                    // Ensure image is properly loaded and visible
+                    const img = e.currentTarget
+                    if (img.naturalWidth === 0 || img.naturalHeight === 0) {
+                      console.warn('Image has zero dimensions:', gameState.image)
+                    }
+                  }}
+                  onError={(e) => {
+                    setImageLoading(false)
+                    setImageError(true)
+                    console.error('Image failed to load:', gameState.image)
+                  }}
+                />
+              )}
+            </div>
             {/* Pet Type Indicator */}
             <div className="absolute top-4 left-4 bg-white dark:bg-gray-700 bg-opacity-90 dark:bg-opacity-90 px-3 py-1 rounded-full shadow-md">
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -392,7 +474,14 @@ export default function EnhancedPetGame({ selectedModel, selectedModelName, user
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <span className="text-gray-600 dark:text-gray-400">Your Answer:</span>
-                  <div className="font-medium text-gray-800 dark:text-gray-200">{selectedAnswer}</div>
+                  <div className="font-medium flex items-center space-x-2">
+                    <span className={selectedAnswer === gameState.correctAnswer ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
+                      {selectedAnswer}
+                    </span>
+                    <span className={selectedAnswer === gameState.correctAnswer ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
+                      {selectedAnswer === gameState.correctAnswer ? '✅' : '❌'}
+                    </span>
+                  </div>
                 </div>
                 <div>
                   <span className="text-gray-600 dark:text-gray-400">Correct Answer:</span>
@@ -400,7 +489,14 @@ export default function EnhancedPetGame({ selectedModel, selectedModelName, user
                 </div>
                 <div>
                   <span className="text-gray-600 dark:text-gray-400">AI Prediction:</span>
-                  <div className="font-medium text-blue-600 dark:text-blue-400">{gameState.aiPrediction}</div>
+                  <div className="font-medium flex items-center space-x-2">
+                    <span className={gameState.aiPrediction === gameState.correctAnswer ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
+                      {gameState.aiPrediction}
+                    </span>
+                    <span className={gameState.aiPrediction === gameState.correctAnswer ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
+                      {gameState.aiPrediction === gameState.correctAnswer ? '✅' : '❌'}
+                    </span>
+                  </div>
                 </div>
                 <div>
                   <span className="text-gray-600 dark:text-gray-400">AI Confidence:</span>
@@ -411,8 +507,20 @@ export default function EnhancedPetGame({ selectedModel, selectedModelName, user
               <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
                 <div className="text-center">
                   <span className="text-sm text-gray-600 dark:text-gray-400">Competition Result: </span>
-                  <span className={`font-semibold ${selectedAnswer === gameState.correctAnswer ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                    {selectedAnswer === gameState.correctAnswer ? '✅ You beat the AI!' : '❌ AI was more accurate'}
+                  <span className={`font-semibold ${
+                    selectedAnswer === gameState.correctAnswer && gameState.aiPrediction === gameState.correctAnswer 
+                      ? 'text-blue-600 dark:text-blue-400' 
+                      : selectedAnswer === gameState.correctAnswer 
+                      ? 'text-green-600 dark:text-green-400' 
+                      : 'text-red-600 dark:text-red-400'
+                  }`}>
+                    {selectedAnswer === gameState.correctAnswer && gameState.aiPrediction === gameState.correctAnswer 
+                      ? '🤝 It\'s a tie! Both correct!' 
+                      : selectedAnswer === gameState.correctAnswer 
+                      ? '✅ You beat the AI!' 
+                      : gameState.aiPrediction === gameState.correctAnswer 
+                      ? '❌ AI was more accurate' 
+                      : '❌ Both wrong - AI wins by default'}
                   </span>
                 </div>
               </div>
@@ -423,20 +531,24 @@ export default function EnhancedPetGame({ selectedModel, selectedModelName, user
 
       {/* Game Stats */}
       <div className="mt-6 pt-4 border-t border-gray-200">
-        <div className="grid grid-cols-3 gap-4 text-center text-sm">
+        <div className="grid grid-cols-4 gap-4 text-center text-sm">
           <div>
             <div className="text-gray-600 dark:text-gray-400">Questions</div>
             <div className="font-bold text-gray-800 dark:text-gray-200">{totalQuestions}</div>
           </div>
           <div>
-            <div className="text-gray-600">Accuracy</div>
-            <div className="font-bold text-gray-800">
-              {totalQuestions > 0 ? Math.round((score / totalQuestions) * 100) : 0}%
+            <div className="text-gray-600 dark:text-gray-400">Accuracy</div>
+            <div className="font-bold text-gray-800 dark:text-gray-200">
+              {totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0}%
             </div>
           </div>
           <div>
-            <div className="text-gray-600">Best Streak</div>
-            <div className="font-bold text-gray-800">{streak}</div>
+            <div className="text-gray-600 dark:text-gray-400">Total Score</div>
+            <div className="font-bold text-gray-800 dark:text-gray-200">{score}</div>
+          </div>
+          <div>
+            <div className="text-gray-600 dark:text-gray-400">Best Streak</div>
+            <div className="font-bold text-gray-800 dark:text-gray-200">{streak}</div>
           </div>
         </div>
       </div>

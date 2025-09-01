@@ -8,6 +8,7 @@
     "next-dev": "next dev",
     "dev": "concurrently \"pnpm run next-dev\" \"pnpm run flask-dev\"",
     "build": "next build",
+    "build:dynamic": "NEXT_STATIC_GENERATION=false next build",
     "start": "next start",
     "lint": "next lint",
     "clean": "rm -rf .next out dist",

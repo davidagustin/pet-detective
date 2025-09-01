@@ -21,7 +21,7 @@ interface EnhancedPetGameProps {
   selectedModel: string
   selectedModelName: string | null
   user: User | null
-  onScoreUpdate: (score: number, total: number) => void
+  onScoreUpdate: (score: number, total: number, correct: number) => void
 }
 
 export default function EnhancedPetGame({ selectedModel, selectedModelName, user, onScoreUpdate }: EnhancedPetGameProps) {
@@ -62,7 +62,7 @@ export default function EnhancedPetGame({ selectedModel, selectedModelName, user
       handleTimeout()
     }
     return () => clearTimeout(timer)
-  }, [timeLeft, isTimerActive, gameState])
+  }, [timeLeft, isTimerActive, gameState]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const startNewGame = async () => {
     setIsLoading(true)
@@ -125,13 +125,13 @@ export default function EnhancedPetGame({ selectedModel, selectedModelName, user
       
       const newTotalQuestions = totalQuestions + 1
       setTotalQuestions(newTotalQuestions)
-      onScoreUpdate(score, newTotalQuestions)
+      onScoreUpdate(score, newTotalQuestions, correctAnswers)
       
       // Check if game should end
       if (newTotalQuestions >= questionCount) {
         // Game completed - show final results
         setTimeout(() => {
-          onScoreUpdate(score, newTotalQuestions)
+          onScoreUpdate(score, newTotalQuestions, correctAnswers)
           // Reset game state for new game
           setGameState(null)
           setSelectedAnswer(null)
@@ -155,13 +155,13 @@ export default function EnhancedPetGame({ selectedModel, selectedModelName, user
     setStreak(0)
     const newTotalQuestions = totalQuestions + 1
     setTotalQuestions(newTotalQuestions)
-    onScoreUpdate(score, newTotalQuestions)
+    onScoreUpdate(score, newTotalQuestions, correctAnswers)
     
     // Check if game should end
     if (newTotalQuestions >= questionCount) {
       // Game completed - show final results
       setTimeout(() => {
-        onScoreUpdate(score, newTotalQuestions)
+        onScoreUpdate(score, newTotalQuestions, correctAnswers)
         // Reset game state for new game
         setGameState(null)
         setSelectedAnswer(null)

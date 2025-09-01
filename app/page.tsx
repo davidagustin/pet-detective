@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import Link from 'next/link'
 
 // Force dynamic rendering to prevent static generation issues
 export const dynamic = 'force-dynamic'
@@ -35,7 +36,7 @@ function CompactLeaderboard() {
 
   useEffect(() => {
     fetchLeaderboard()
-  }, [])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchFromAPI = async () => {
     try {
@@ -297,6 +298,16 @@ export default function Home() {
             </div>
             
             <div className="flex items-center space-x-4">
+              {/* About Link */}
+              <Link
+                href="/about"
+                className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors"
+                aria-label="About Pet Detective"
+                title="Learn about the game"
+              >
+                About
+              </Link>
+              
               {/* GitHub Link */}
               <a
                 href="https://github.com/davidagustin/pet-detective"

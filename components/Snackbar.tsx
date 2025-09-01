@@ -32,7 +32,7 @@ export default function Snackbar({
 
       return () => clearTimeout(timer)
     }
-  }, [isVisible, duration])
+  }, [isVisible, duration]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleClose = () => {
     setIsAnimating(false)

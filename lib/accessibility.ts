@@ -200,7 +200,7 @@ export const useKeyboardNavigation = (items: any[], onSelect: (item: any) => voi
   useEffect(() => {
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [items, selectedIndex, onSelect])
+  }, [items, selectedIndex, onSelect]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return { selectedIndex, setSelectedIndex }
 }

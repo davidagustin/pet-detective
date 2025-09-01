@@ -147,14 +147,17 @@ const getAnimalType = (breed: string, breedData: BreedData): AnimalType => {
   return catBreeds.includes(breed) ? 'cat' : 'dog';
 };
 
-export async function GET() {
+// GET handler for testing
+export async function GET(request: NextRequest) {
   return NextResponse.json({ 
     message: 'Game start API is working',
     method: 'GET',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    status: 'ok'
   });
 }
 
+// POST handler for starting a new game
 export async function POST(request: NextRequest) {
   try {
     console.log('POST /api/game/start called');

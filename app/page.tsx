@@ -174,6 +174,7 @@ export default function Home() {
   const [success, setSuccess] = useSuccessState()
   const [score, setScore] = useState(0)
   const [totalQuestions, setTotalQuestions] = useState(0)
+  const [correctAnswers, setCorrectAnswers] = useState(0)
   const fileInputRef = useRef<HTMLInputElement>(null)
   
   // Accessibility hooks
@@ -265,9 +266,10 @@ export default function Home() {
 
 
 
-  const handleScoreUpdate = (newScore: number, newTotal: number) => {
+  const handleScoreUpdate = (newScore: number, newTotal: number, newCorrect: number) => {
     setScore(newScore)
     setTotalQuestions(newTotal)
+    setCorrectAnswers(newCorrect)
   }
 
   const handleDynamicModelSelect = (modelName: string, modelType: string) => {
@@ -500,7 +502,7 @@ export default function Home() {
               </div>
               <div className="text-center">
                 <div className="text-3xl font-bold text-purple-600">
-                  {totalQuestions > 0 ? Math.round((score / totalQuestions) * 100) : 0}%
+                  {totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0}%
                 </div>
                 <div className="text-sm text-gray-600 dark:text-gray-400">Accuracy</div>
               </div>

@@ -4,9 +4,32 @@
   "installCommand": "pnpm install --frozen-lockfile",
   "framework": "nextjs",
   "functions": {
-    "app/page.tsx": {
+    "app/api/game/start/route.ts": {
+      "maxDuration": 30
+    },
+    "app/api/game/check/route.ts": {
+      "maxDuration": 30
+    },
+    "app/api/health/route.ts": {
       "maxDuration": 10
     }
   },
-  "regions": ["iad1"]
+  "regions": ["iad1"],
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/$1"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/game/start",
+      "methods": ["GET", "POST", "OPTIONS"],
+      "headers": {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization"
+      }
+    }
+  ]
 }

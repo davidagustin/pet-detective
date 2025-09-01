@@ -29,8 +29,8 @@ export default function AboutPage() {
             <div>
               <p className="text-gray-600 dark:text-gray-300 mb-4 leading-relaxed">
                 Pet Detective is an AI-powered pet breed recognition game that challenges you to identify 
-                cat and dog breeds from images. But here's the twist - you're not just playing against 
-                yourself, you're competing against real artificial intelligence models!
+                cat and dog breeds from images. But here&apos;s the twist - you&apos;re not just playing against 
+                yourself, you&apos;re competing against real artificial intelligence models!
               </p>
               <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
                 Our advanced machine learning models (ResNet-50, MobileNet V2, and AlexNet) have been 
@@ -96,7 +96,7 @@ export default function AboutPage() {
                   </div>
                   <div>
                     <p className="text-gray-600 dark:text-gray-300">
-                      <strong>Start the game:</strong> Click "Start New Game" and a pet image will appear.
+                      <strong>Start the game:</strong> Click &quot;Start New Game&quot; and a pet image will appear.
                     </p>
                   </div>
                 </div>
@@ -204,12 +204,12 @@ export default function AboutPage() {
                   <strong>🤝 Tie:</strong> Both you and AI get it correct
                 </p>
                 <p className="text-gray-600 dark:text-gray-300">
-                  <strong>✅ You Win:</strong> You're correct, AI is wrong
+                  <strong>✅ You Win:</strong> You&apos;re correct, AI is wrong
                 </p>
               </div>
               <div>
                 <p className="text-gray-600 dark:text-gray-300">
-                  <strong>❌ AI Wins:</strong> AI is correct, you're wrong
+                  <strong>❌ AI Wins:</strong> AI is correct, you&apos;re wrong
                 </p>
                 <p className="text-gray-600 dark:text-gray-300">
                   <strong>❌ Both Wrong:</strong> AI wins by default

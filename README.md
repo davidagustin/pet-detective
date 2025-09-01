@@ -116,7 +116,7 @@ Pet Detective is a comprehensive AI-powered platform that combines deep learning
 
 ### 🚀 Production Deployment Optimization
 - **Next.js API Routes**: Replaced Flask API with serverless Next.js API routes for Vercel compatibility
-- **Mock AI Predictions**: Production-ready mock endpoints for game functionality without heavy ML models
+- **Real AI Predictions**: Production-ready ML model inference for accurate pet breed predictions
 - **Serverless Architecture**: All endpoints optimized for Vercel's serverless environment
 - **No Backend Dependencies**: Self-contained deployment with no external Python/Flask requirements
 

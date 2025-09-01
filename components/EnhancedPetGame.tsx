@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Image from 'next/image'
 import { apiClient } from '../lib/api-client'
 
 interface GameState {
@@ -266,7 +267,7 @@ export default function EnhancedPetGame({ selectedModel, selectedModelName, user
               <div className="flex items-center space-x-3">
                 <div className="text-2xl">🤖</div>
                 <div>
-                  <div className="text-sm opacity-90">You're competing against:</div>
+                  <div className="text-sm opacity-90">You&apos;re competing against:</div>
                   <div className="text-lg font-bold">{getModelDisplayName(selectedModel)}</div>
                   <div className="text-xs opacity-75">{getModelDescription(selectedModel)}</div>
                 </div>
@@ -299,10 +300,13 @@ export default function EnhancedPetGame({ selectedModel, selectedModelName, user
 
           {/* Game Image */}
           <div className="relative">
-            <img
+            <Image
               src={gameState.image}
               alt="Pet to guess"
+              width={800}
+              height={600}
               className="w-full h-80 object-cover rounded-lg shadow-md"
+              priority
             />
             {/* Pet Type Indicator */}
             <div className="absolute top-4 left-4 bg-white dark:bg-gray-700 bg-opacity-90 dark:bg-opacity-90 px-3 py-1 rounded-full shadow-md">

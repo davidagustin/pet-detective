@@ -45,15 +45,14 @@ function CompactLeaderboard() {
                                    config.supabase.anonKey !== 'placeholder-key'
       
       if (!isSupabaseConfigured) {
-        // Use sample data when Supabase is not configured
-        const sampleData = [
-          { id: '1', username: 'PetExpert', score: 2450, total_questions: 35, accuracy: 92 },
-          { id: '2', username: 'DogLover123', score: 2100, total_questions: 30, accuracy: 88 },
-          { id: '3', username: 'CatWhisperer', score: 1950, total_questions: 28, accuracy: 85 },
-          { id: '4', username: 'AnimalGuru', score: 1800, total_questions: 25, accuracy: 89 },
-          { id: '5', username: 'BreedMaster', score: 1650, total_questions: 22, accuracy: 86 }
-        ]
-        setLeaderboard(sampleData)
+        // Try to fetch from API instead of using sample data
+        try {
+          const data = await apiClient.getLeaderboard();
+          setLeaderboard(data.allTime || []);
+        } catch (error) {
+          console.error('Error fetching leaderboard from API:', error);
+          setLeaderboard([]);
+        }
         setLoading(false)
         return
       }
@@ -67,15 +66,16 @@ function CompactLeaderboard() {
 
       if (supabaseError) {
         console.error('Supabase error:', supabaseError)
-        // Fall back to sample data instead of throwing error
-        const sampleData = [
-          { id: '1', username: 'PetExpert', score: 2450, total_questions: 35, accuracy: 92 },
-          { id: '2', username: 'DogLover123', score: 2100, total_questions: 30, accuracy: 88 },
-          { id: '3', username: 'CatWhisperer', score: 1950, total_questions: 28, accuracy: 85 }
-        ]
-        setLeaderboard(sampleData)
+        // Try to fetch from API instead of using sample data
+        try {
+          const data = await apiClient.getLeaderboard();
+          setLeaderboard(data.allTime || []);
+        } catch (error) {
+          console.error('Error fetching leaderboard from API:', error);
+          setLeaderboard([]);
+          setError('Error loading leaderboard from all sources')
+        }
         setLoading(false)
-        setError('Error loading leaderboard')
         return
       }
 
@@ -83,15 +83,16 @@ function CompactLeaderboard() {
       setLoading(false)
     } catch (error: any) {
       console.error('Leaderboard fetch error:', error)
-      // Fall back to sample data instead of showing error
-      const sampleData = [
-        { id: '1', username: 'PetExpert', score: 2450, total_questions: 35, accuracy: 92 },
-        { id: '2', username: 'DogLover123', score: 2100, total_questions: 30, accuracy: 88 },
-        { id: '3', username: 'CatWhisperer', score: 1950, total_questions: 28, accuracy: 85 }
-      ]
-      setLeaderboard(sampleData)
+      // Try to fetch from API instead of using sample data
+      try {
+        const data = await apiClient.getLeaderboard();
+        setLeaderboard(data.allTime || []);
+      } catch (apiError) {
+        console.error('Error fetching leaderboard from API:', apiError);
+        setLeaderboard([]);
+        setError('Error loading leaderboard from all sources')
+      }
       setLoading(false)
-      setError('Error loading leaderboard')
     }
   }
 

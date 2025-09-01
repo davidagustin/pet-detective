@@ -39,18 +39,16 @@ export default function Leaderboard() {
                                    supabaseKey !== 'placeholder-key'
       
       if (!isSupabaseConfigured) {
-        // Use sample data when Supabase is not configured
-        const sampleData = [
-          { id: '1', user_id: '1', username: 'PetExpert', score: 2450, total_questions: 35, accuracy: 92, created_at: new Date().toISOString() },
-          { id: '2', user_id: '2', username: 'DogLover123', score: 2100, total_questions: 30, accuracy: 88, created_at: new Date().toISOString() },
-          { id: '3', user_id: '3', username: 'CatWhisperer', score: 1950, total_questions: 28, accuracy: 85, created_at: new Date().toISOString() },
-          { id: '4', user_id: '4', username: 'AnimalGuru', score: 1800, total_questions: 25, accuracy: 89, created_at: new Date().toISOString() },
-          { id: '5', user_id: '5', username: 'BreedMaster', score: 1650, total_questions: 22, accuracy: 86, created_at: new Date().toISOString() },
-          { id: '6', user_id: '6', username: 'PetDetective', score: 1500, total_questions: 20, accuracy: 83, created_at: new Date().toISOString() },
-          { id: '7', user_id: '7', username: 'FurryFriend', score: 1350, total_questions: 18, accuracy: 81, created_at: new Date().toISOString() },
-          { id: '8', user_id: '8', username: 'PawPrint', score: 1200, total_questions: 16, accuracy: 84, created_at: new Date().toISOString() }
-        ]
-        setLeaderboard(sampleData)
+        // Try to fetch from API instead of using sample data
+        try {
+          const { apiClient } = await import('../lib/api-client');
+          const data = await apiClient.getLeaderboard();
+          setLeaderboard(data.allTime || []);
+        } catch (error) {
+          console.error('Error fetching leaderboard from API:', error);
+          setLeaderboard([]);
+          setError('Unable to load leaderboard. Please configure Supabase or check your API connection.');
+        }
         setLoading(false)
         return
       }

@@ -4,7 +4,6 @@ import { useState, useEffect, useRef } from 'react'
 
 // Force dynamic rendering to prevent static generation issues
 export const dynamic = 'force-dynamic'
-export const revalidate = 0
 import { createClient } from '@supabase/supabase-js'
 import Auth from '../components/Auth'
 import Leaderboard from '../components/Leaderboard'

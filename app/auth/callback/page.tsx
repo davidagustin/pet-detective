@@ -4,7 +4,6 @@ import { useEffect } from 'react'
 
 // Force dynamic rendering to prevent static generation issues
 export const dynamic = 'force-dynamic'
-export const revalidate = 0
 import { useRouter } from 'next/navigation'
 import { createClient } from '@supabase/supabase-js'
 

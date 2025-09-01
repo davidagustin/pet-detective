@@ -8,6 +8,13 @@ build/
 *.tmp
 *.temp
 
+# Cache directories
+.cache/
+.parcel-cache/
+.eslintcache/
+.vercel/
+.vercelignore
+
 # Python files and directories
 venv/
 __pycache__/
@@ -56,3 +63,13 @@ Thumbs.db
 .vscode/
 .idea/
 *.sublime-*
+
+# Lock files (will be regenerated)
+package-lock.json
+yarn.lock
+
+# Development files
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local

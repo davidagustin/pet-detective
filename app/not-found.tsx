@@ -1,7 +1,6 @@
-import Link from 'next/link'
+'use client'
 
-// Force dynamic rendering to prevent static generation issues
-export const dynamic = 'force-dynamic'
+import Link from 'next/link'
 
 export default function NotFound() {
   return (
@@ -18,23 +17,19 @@ export default function NotFound() {
         </div>
         
         <div className="space-y-3">
-          <Link
-            href="/"
-            className="block w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors"
-          >
-            Go to home page
-          </Link>
-          
           <button
             onClick={() => window.history.back()}
-            className="w-full bg-gray-600 hover:bg-gray-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors"
           >
-            Go back
+            Go Back
           </button>
-        </div>
-        
-        <div className="mt-6 text-sm text-gray-500 dark:text-gray-400">
-          <p>Error 404</p>
+          
+          <Link
+            href="/"
+            className="block w-full bg-gray-600 hover:bg-gray-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors text-center"
+          >
+            Go to Home
+          </Link>
         </div>
       </div>
     </div>

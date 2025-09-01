@@ -30,8 +30,6 @@ const nextConfig = {
   },
   // Disable static generation for pages with client-side interactivity
   trailingSlash: false,
-  // Output standalone for better deployment (commented out for Vercel)
-  // output: 'standalone',
   // Ensure API routes are properly handled
   async headers() {
     return [
@@ -52,12 +50,12 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  // Disable static generation for problematic pages
+  // Ensure API routes are not statically generated
   async rewrites() {
     return [
       {
-        source: '/',
-        destination: '/api/health',
+        source: '/api/:path*',
+        destination: '/api/:path*',
       },
     ];
   },

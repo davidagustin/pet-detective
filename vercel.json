@@ -2,16 +2,5 @@
   "buildCommand": "pnpm run build",
   "outputDirectory": ".next",
   "installCommand": "pnpm install",
-  "framework": "nextjs",
-  "functions": {
-    "app/api/game/start/route.ts": {
-      "maxDuration": 30
-    },
-    "app/api/game/check/route.ts": {
-      "maxDuration": 30
-    },
-    "app/api/health/route.ts": {
-      "maxDuration": 10
-    }
-  }
+  "framework": "nextjs"
 }

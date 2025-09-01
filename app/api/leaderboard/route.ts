@@ -1,45 +1,152 @@
 import { NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
+
+// Initialize Supabase client
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+// Get leaderboard data for a specific time period
+const getLeaderboardData = async (timeFilter: string) => {
+  try {
+    let query = supabase
+      .from('leaderboard')
+      .select('*')
+      .order('score', { ascending: false })
+      .limit(10);
+
+    // Apply time filter
+    if (timeFilter === 'daily') {
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      query = query.gte('created_at', yesterday.toISOString());
+    } else if (timeFilter === 'weekly') {
+      const lastWeek = new Date();
+      lastWeek.setDate(lastWeek.getDate() - 7);
+      query = query.gte('created_at', lastWeek.toISOString());
+    }
+    // 'allTime' doesn't need a filter
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error(`Error fetching ${timeFilter} leaderboard:`, error);
+      return [];
+    }
+
+    // Process and aggregate data
+    const aggregatedData = data?.reduce((acc: any, entry: any) => {
+      const existing = acc.find((item: any) => item.username === entry.username);
+      
+      if (existing) {
+        existing.score += entry.score;
+        existing.games_played += 1;
+        existing.correct_answers += entry.is_correct ? 1 : 0;
+        existing.total_time += entry.time_taken;
+      } else {
+        acc.push({
+          username: entry.username,
+          score: entry.score,
+          games_played: 1,
+          correct_answers: entry.is_correct ? 1 : 0,
+          total_time: entry.time_taken,
+          model_used: entry.model_type || 'resnet50'
+        });
+      }
+      
+      return acc;
+    }, []);
+
+    // Calculate additional stats and sort by score
+    return aggregatedData
+      ?.map((entry: any) => ({
+        rank: 0, // Will be set after sorting
+        username: entry.username,
+        score: entry.score,
+        games_played: entry.games_played,
+        accuracy: entry.games_played > 0 ? (entry.correct_answers / entry.games_played).toFixed(2) : '0.00',
+        avg_time: entry.games_played > 0 ? Math.round(entry.total_time / entry.games_played) : 0,
+        model_used: entry.model_used
+      }))
+      .sort((a: any, b: any) => b.score - a.score)
+      .map((entry: any, index: number) => ({ ...entry, rank: index + 1 })) || [];
+
+  } catch (error) {
+    console.error(`Error processing ${timeFilter} leaderboard:`, error);
+    return [];
+  }
+};
+
+// Get global statistics
+const getGlobalStats = async () => {
+  try {
+    const { count: totalPlayers } = await supabase
+      .from('leaderboard')
+      .select('*', { count: 'exact', head: true });
+
+    const { count: totalGames } = await supabase
+      .from('leaderboard')
+      .select('*', { count: 'exact', head: true });
+
+    const { data: accuracyData } = await supabase
+      .from('leaderboard')
+      .select('is_correct');
+
+    const totalCorrect = accuracyData?.filter(entry => entry.is_correct).length || 0;
+    const avgAccuracy = totalGames > 0 ? (totalCorrect / totalGames).toFixed(2) : '0.00';
+
+    const { data: modelData } = await supabase
+      .from('leaderboard')
+      .select('model_type');
+
+    const modelCounts = modelData?.reduce((acc: any, entry: any) => {
+      const model = entry.model_type || 'resnet50';
+      acc[model] = (acc[model] || 0) + 1;
+      return acc;
+    }, {});
+
+    const mostPopularModel = modelCounts 
+      ? Object.entries(modelCounts).sort(([,a]: any, [,b]: any) => b - a)[0]?.[0] || 'resnet50'
+      : 'resnet50';
+
+    return {
+      total_players: totalPlayers || 0,
+      total_games: totalGames || 0,
+      avg_accuracy: avgAccuracy,
+      most_popular_model: mostPopularModel
+    };
+
+  } catch (error) {
+    console.error('Error fetching global stats:', error);
+    return {
+      total_players: 0,
+      total_games: 0,
+      avg_accuracy: '0.00',
+      most_popular_model: 'resnet50'
+    };
+  }
+};
 
 export async function GET() {
   try {
-    // Mock leaderboard data since we don't have the database in production
-    const mockLeaderboard = {
-      daily: Array.from({ length: 10 }, (_, i) => ({
-        rank: i + 1,
-        username: `Player${Math.floor(Math.random() * 1000)}`,
-        score: Math.floor(Math.random() * 5000) + 1000,
-        games_played: Math.floor(Math.random() * 50) + 10,
-        accuracy: (Math.random() * 0.4 + 0.6).toFixed(2), // 60-100%
-        avg_time: Math.floor(Math.random() * 15) + 10, // 10-25 seconds
-        model_used: ['resnet50', 'mobilenetv2', 'alexnet'][Math.floor(Math.random() * 3)]
-      })),
-      weekly: Array.from({ length: 10 }, (_, i) => ({
-        rank: i + 1,
-        username: `TopPlayer${Math.floor(Math.random() * 500)}`,
-        score: Math.floor(Math.random() * 20000) + 5000,
-        games_played: Math.floor(Math.random() * 200) + 50,
-        accuracy: (Math.random() * 0.3 + 0.7).toFixed(2), // 70-100%
-        avg_time: Math.floor(Math.random() * 12) + 8, // 8-20 seconds
-        model_used: ['resnet50', 'mobilenetv2', 'alexnet'][Math.floor(Math.random() * 3)]
-      })),
-      allTime: Array.from({ length: 10 }, (_, i) => ({
-        rank: i + 1,
-        username: `Legend${Math.floor(Math.random() * 100)}`,
-        score: Math.floor(Math.random() * 50000) + 20000,
-        games_played: Math.floor(Math.random() * 1000) + 200,
-        accuracy: (Math.random() * 0.2 + 0.8).toFixed(2), // 80-100%
-        avg_time: Math.floor(Math.random() * 10) + 5, // 5-15 seconds
-        model_used: ['resnet50', 'mobilenetv2', 'alexnet'][Math.floor(Math.random() * 3)]
-      })),
-      stats: {
-        total_players: Math.floor(Math.random() * 10000) + 5000,
-        total_games: Math.floor(Math.random() * 100000) + 50000,
-        avg_accuracy: (Math.random() * 0.2 + 0.75).toFixed(2), // 75-95%
-        most_popular_model: 'resnet50'
-      }
+    // Fetch real leaderboard data
+    const [daily, weekly, allTime] = await Promise.all([
+      getLeaderboardData('daily'),
+      getLeaderboardData('weekly'),
+      getLeaderboardData('allTime')
+    ]);
+
+    // Get global statistics
+    const stats = await getGlobalStats();
+
+    const leaderboard = {
+      daily,
+      weekly,
+      allTime,
+      stats
     };
 
-    return NextResponse.json(mockLeaderboard);
+    return NextResponse.json(leaderboard);
   } catch (error) {
     console.error('Error fetching leaderboard:', error);
     return NextResponse.json(

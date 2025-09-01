@@ -1,4 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server';
+import fs from 'fs';
+import path from 'path';
+
+// Load real breed data
+const loadBreedData = () => {
+  try {
+    const breedMappingPath = path.join(process.cwd(), 'api', 'breed_mapping.json');
+    const breedData = JSON.parse(fs.readFileSync(breedMappingPath, 'utf8'));
+    return breedData;
+  } catch (error) {
+    console.error('Error loading breed data:', error);
+    return null;
+  }
+};
+
+// Get Cloudinary URL for a breed and image number
+const getCloudinaryUrl = (breed: string, imageNumber: number) => {
+  const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'drj3twq19';
+  const breedKey = breed.toLowerCase().replace(/\s+/g, '_');
+  return `https://res.cloudinary.com/${cloudName}/image/upload/c_fill,w_800,h_600,q_auto/pet-detective/${breedKey}_${imageNumber}`;
+};
+
+// Get animal type for a breed
+const getAnimalType = (breed: string, breedData: any): 'cat' | 'dog' => {
+  const catBreeds = breedData.breed_types.cats;
+  return catBreeds.includes(breed) ? 'cat' : 'dog';
+};
 
 export async function GET(request: NextRequest) {
   return NextResponse.json({ 
@@ -16,46 +43,72 @@ export async function POST(request: NextRequest) {
     // Use game_mode if provided, otherwise fall back to difficulty
     const gameDifficulty = game_mode || difficulty;
 
-    // Since we don't have the actual Flask API in production, 
-    // we'll return mock game data with Cloudinary images
-    const mockBreeds = [
-      'Abyssinian', 'Bengal', 'British_Shorthair', 'Maine_Coon', 'Persian', 'Ragdoll', 'Siamese',
-      'beagle', 'boxer', 'chihuahua', 'german_shepherd', 'golden_retriever', 'labrador_retriever',
-      'poodle', 'rottweiler', 'shiba_inu', 'yorkshire_terrier'
-    ];
+    // Load real breed data
+    const breedData = loadBreedData();
+    if (!breedData) {
+      return NextResponse.json(
+        { error: 'Failed to load breed data' },
+        { status: 500 }
+      );
+    }
 
+    // Get all available breeds
+    const allBreeds = [...breedData.breed_types.cats, ...breedData.breed_types.dogs];
+    
     // Generate random options based on difficulty
     const optionCounts = { easy: 4, medium: 4, hard: 6 };
     const optionCount = optionCounts[gameDifficulty as keyof typeof optionCounts] || 4;
 
     // Select random correct answer
-    const correctAnswer = mockBreeds[Math.floor(Math.random() * mockBreeds.length)];
+    const correctAnswer = allBreeds[Math.floor(Math.random() * allBreeds.length)];
     
-    // Generate wrong options
-    const wrongOptions = mockBreeds
-      .filter(breed => breed !== correctAnswer)
+    // Get animal type of correct answer
+    const correctAnimalType = getAnimalType(correctAnswer, breedData);
+    
+    // Filter breeds to same animal type for wrong options
+    const sameTypeBreeds = allBreeds.filter(breed => 
+      breed !== correctAnswer && getAnimalType(breed, breedData) === correctAnimalType
+    );
+    
+    // Generate wrong options from same animal type
+    const wrongOptions = sameTypeBreeds
       .sort(() => 0.5 - Math.random())
       .slice(0, optionCount - 1);
+
+    // If not enough same-type breeds, add some from other type
+    if (wrongOptions.length < optionCount - 1) {
+      const otherTypeBreeds = allBreeds.filter(breed => 
+        breed !== correctAnswer && getAnimalType(breed, breedData) !== correctAnimalType
+      );
+      const additionalNeeded = optionCount - 1 - wrongOptions.length;
+      const additionalOptions = otherTypeBreeds
+        .sort(() => 0.5 - Math.random())
+        .slice(0, additionalNeeded);
+      wrongOptions.push(...additionalOptions);
+    }
 
     // Combine and shuffle options
     const options = [correctAnswer, ...wrongOptions].sort(() => 0.5 - Math.random());
 
-    // Generate random image number (1-200)
+    // Generate random image number (1-200 for variety)
     const imageNumber = Math.floor(Math.random() * 200) + 1;
-    const filename = `${correctAnswer}_${imageNumber}.jpg`;
-
-    // Use Cloudinary URL
-    const cloudinaryUrl = `https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'drj3twq19'}/image/upload/c_fill,w_800,h_600,q_auto/pet-detective/${correctAnswer}_${imageNumber}`;
+    
+    // Get Cloudinary URL for the correct breed
+    const cloudinaryUrl = getCloudinaryUrl(correctAnswer, imageNumber);
 
     const gameData = {
       image: cloudinaryUrl,
       options: options,
       correctAnswer: correctAnswer,
-      aiPrediction: correctAnswer, // Mock AI prediction
+      aiPrediction: correctAnswer, // For now, assume AI is correct
       aiConfidence: 0.85 + Math.random() * 0.14, // Random confidence between 0.85-0.99
       imageMetadata: {
-        animal_type: ['Abyssinian', 'Bengal', 'British_Shorthair', 'Maine_Coon', 'Persian', 'Ragdoll', 'Siamese'].includes(correctAnswer) ? 'cat' : 'dog',
-        filename: filename
+        animal_type: correctAnimalType,
+        filename: `${correctAnswer.toLowerCase().replace(/\s+/g, '_')}_${imageNumber}.jpg`,
+        breed: correctAnswer,
+        total_breeds: allBreeds.length,
+        cat_breeds: breedData.breed_types.cats.length,
+        dog_breeds: breedData.breed_types.dogs.length
       }
     };
 

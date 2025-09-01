@@ -1,51 +1,28 @@
-import json
-import os
-import random
-from typing import Dict, List, Optional, Any
+from typing import Dict, Optional
 
 class CloudinaryHelper:
     """Helper class for managing Cloudinary image URLs in Python backend"""
     
     CLOUD_NAME = 'drj3twq19'
     BASE_URL = f'https://res.cloudinary.com/{CLOUD_NAME}/image/upload'
+    VERSION = 'v1756482370'
     
     def __init__(self):
-        # Load the mappings file
-        self.mappings = self._load_mappings()
-    
-    def _load_mappings(self) -> Dict[str, Any]:
-        """Load the Cloudinary mappings from JSON file"""
-        try:
-            mappings_path = os.path.join(
-                os.path.dirname(__file__), 
-                '..', 
-                'scripts', 
-                'cloudinary-mappings.json'
-            )
-            with open(mappings_path, 'r') as f:
-                return json.load(f)
-        except FileNotFoundError:
-            print("Warning: cloudinary-mappings.json not found. Using fallback URLs.")
-            return {}
+        pass
     
     def get_image_url(self, filename: str, width: int = 800, height: int = 600, 
                      crop: str = 'fill', quality: str = 'auto') -> str:
         """Get Cloudinary URL for an image with transformations"""
         
-        # Check if we have a mapped URL
-        if filename in self.mappings:
-            mapping = self.mappings[filename]
-            public_id = mapping['publicId']
-        else:
-            # Fallback: construct from filename
-            breed, number = self._parse_filename(filename)
-            public_id = f"pet-detective/pet-detective/{breed}_{number}"
+        # Parse filename to get breed and number
+        breed, number = self._parse_filename(filename)
+        public_id = f"pet-detective/pet-detective/{breed}_{number}"
         
-            # Build transformation string
-    transformations = f"w_{width},h_{height},c_{crop},q_{quality}"
-    
-    # Use versioning for better caching and consistency
-    return f"{self.BASE_URL}/v1756482370/{transformations}/{public_id}.jpg"
+        # Build transformation string
+        transformations = f"w_{width},h_{height},c_{crop},q_{quality}"
+        
+        # Use versioning for better caching and consistency
+        return f"{self.BASE_URL}/{self.VERSION}/{transformations}/{public_id}.jpg"
     
     def get_responsive_urls(self, filename: str) -> Dict[str, str]:
         """Get responsive image URLs for different screen sizes"""

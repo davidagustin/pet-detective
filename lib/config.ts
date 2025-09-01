@@ -5,12 +5,51 @@ export const config = {
     baseUrl: '', // Use relative URLs (Next.js API routes)
     timeout: 30000, // 30 seconds
     retries: 3,
+    pythonApi: {
+      url: process.env.NODE_ENV === 'production' 
+        ? '/api/predict' 
+        : 'http://127.0.0.1:5328/api/predict',
+      timeout: 10000, // 10 seconds
+    },
+  },
+  
+  // Cloudinary Configuration
+  cloudinary: {
+    cloudName: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'drj3twq19',
+    version: 'v1756482370',
+    baseUrl: `https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'drj3twq19'}`,
   },
   
   // Supabase Configuration
   supabase: {
     url: process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co',
     anonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key',
+  },
+  
+  // Game Configuration
+  game: {
+    difficulties: {
+      easy: { optionCount: 4 },
+      medium: { optionCount: 4 },
+      hard: { optionCount: 6 },
+    },
+    defaultMaxImages: 200,
+    breeds: {
+      cats: [
+        'Abyssinian', 'Bengal', 'Birman', 'Bombay', 'British Shorthair',
+        'Egyptian Mau', 'Maine Coon', 'Persian', 'Ragdoll', 'Russian Blue',
+        'Siamese', 'Sphynx'
+      ],
+      dogs: [
+        'American Bulldog', 'American Pit Bull Terrier', 'Basset Hound',
+        'Beagle', 'Boxer', 'Chihuahua', 'English Cocker Spaniel',
+        'English Setter', 'German Shorthaired', 'Great Pyrenees',
+        'Havanese', 'Japanese Chin', 'Keeshond', 'Leonberger',
+        'Miniature Pinscher', 'Newfoundland', 'Pomeranian', 'Pug',
+        'Saint Bernard', 'Samoyed', 'Scottish Terrier', 'Shiba Inu',
+        'Staffordshire Bull Terrier', 'Wheaten Terrier', 'Yorkshire Terrier'
+      ],
+    },
   },
   
   // Security Configuration

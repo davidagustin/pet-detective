@@ -6,7 +6,15 @@ import path from 'path';
 const loadBreedData = (): BreedData | null => {
   try {
     const breedMappingPath = path.join(process.cwd(), 'api', 'breed_mapping.json');
+    console.log('Loading breed data from:', breedMappingPath);
+    
+    if (!fs.existsSync(breedMappingPath)) {
+      console.error('Breed mapping file does not exist:', breedMappingPath);
+      return null;
+    }
+    
     const breedData = JSON.parse(fs.readFileSync(breedMappingPath, 'utf8'));
+    console.log('Successfully loaded breed data with', breedData.breed_types.cats.length, 'cats and', breedData.breed_types.dogs.length, 'dogs');
     return breedData;
   } catch (error) {
     console.error('Error loading breed data:', error);
@@ -149,7 +157,11 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('POST /api/game/start called');
+    
     const body = await request.json();
+    console.log('Request body:', body);
+    
     const { 
       model_type = 'resnet50', 
       model_name, 
@@ -163,12 +175,17 @@ export async function POST(request: NextRequest) {
     const animalFilter: AnimalFilter = animal_filter as AnimalFilter;
 
     // Load real breed data
-    const breedData = loadBreedData();
+    let breedData = loadBreedData();
     if (!breedData) {
-      return NextResponse.json(
-        { error: 'Failed to load breed data' },
-        { status: 500 }
-      );
+      console.error('Failed to load breed data, using fallback');
+      // Fallback breed data
+      breedData = {
+        breed_types: {
+          cats: ['Persian', 'Siamese', 'Maine Coon', 'Ragdoll', 'British Shorthair'],
+          dogs: ['Golden Retriever', 'Labrador Retriever', 'German Shepherd', 'Bulldog', 'Beagle']
+        },
+        filename_to_breed: {}
+      };
     }
 
     // Filter breeds based on animal_filter preference

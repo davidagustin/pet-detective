@@ -93,7 +93,7 @@ const getGlobalStats = async () => {
       .select('is_correct');
 
     const totalCorrect = accuracyData?.filter(entry => entry.is_correct).length || 0;
-    const avgAccuracy = totalGames > 0 ? (totalCorrect / totalGames).toFixed(2) : '0.00';
+    const avgAccuracy = (totalGames || 0) > 0 ? (totalCorrect / (totalGames || 0)).toFixed(2) : '0.00';
 
     const { data: modelData } = await supabase
       .from('leaderboard')

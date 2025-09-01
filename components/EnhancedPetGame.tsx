@@ -45,6 +45,7 @@ export default function EnhancedPetGame({ selectedModel, selectedModelName, user
   const [streak, setStreak] = useState(0)
   const [gameMode, setGameMode] = useState<'easy' | 'medium' | 'hard'>('medium')
   const [animalFilter, setAnimalFilter] = useState<'cats' | 'dogs' | 'both'>('both')
+  const [questionCount, setQuestionCount] = useState<5 | 10 | 15 | 20>(10)
   const [showResults, setShowResults] = useState(false)
   const [timeLeft, setTimeLeft] = useState(getTimeLimit('medium'))
   const [isTimerActive, setIsTimerActive] = useState(false)
@@ -122,8 +123,24 @@ export default function EnhancedPetGame({ selectedModel, selectedModelName, user
         setStreak(0)
       }
       
-      setTotalQuestions(totalQuestions + 1)
-      onScoreUpdate(score, totalQuestions + 1)
+      const newTotalQuestions = totalQuestions + 1
+      setTotalQuestions(newTotalQuestions)
+      onScoreUpdate(score, newTotalQuestions)
+      
+      // Check if game should end
+      if (newTotalQuestions >= questionCount) {
+        // Game completed - show final results
+        setTimeout(() => {
+          onScoreUpdate(score, newTotalQuestions)
+          // Reset game state for new game
+          setGameState(null)
+          setSelectedAnswer(null)
+          setIsCorrect(null)
+          setShowResults(false)
+          setIsTimerActive(false)
+          setTimeLeft(getTimeLimit(gameMode))
+        }, 2000)
+      }
     } catch (error: unknown) {
       console.error('Error checking answer:', error)
     } finally {
@@ -136,8 +153,24 @@ export default function EnhancedPetGame({ selectedModel, selectedModelName, user
     setIsCorrect(false)
     setShowResults(true)
     setStreak(0)
-    setTotalQuestions(totalQuestions + 1)
-    onScoreUpdate(score, totalQuestions + 1)
+    const newTotalQuestions = totalQuestions + 1
+    setTotalQuestions(newTotalQuestions)
+    onScoreUpdate(score, newTotalQuestions)
+    
+    // Check if game should end
+    if (newTotalQuestions >= questionCount) {
+      // Game completed - show final results
+      setTimeout(() => {
+        onScoreUpdate(score, newTotalQuestions)
+        // Reset game state for new game
+        setGameState(null)
+        setSelectedAnswer(null)
+        setIsCorrect(null)
+        setShowResults(false)
+        setIsTimerActive(false)
+        setTimeLeft(getTimeLimit(gameMode))
+      }, 2000)
+    }
   }
 
   const calculatePoints = (timeTaken: number, currentStreak: number, mode: 'easy' | 'medium' | 'hard') => {
@@ -268,6 +301,35 @@ export default function EnhancedPetGame({ selectedModel, selectedModelName, user
           {animalFilter === 'cats' ? 'Quiz will only show cat breeds' : 
            animalFilter === 'dogs' ? 'Quiz will only show dog breeds' : 
            'Quiz will show both cats and dogs'}
+        </p>
+      </div>
+
+      {/* Question Count Selection */}
+      <div className="mb-6">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Number of Questions:</label>
+        <div className="flex space-x-2">
+          {([5, 10, 15, 20] as const).map((count) => (
+            <button
+              key={count}
+              onClick={() => {
+                console.log('Setting question count to:', count)
+                setQuestionCount(count)
+              }}
+              disabled={gameState !== null || isLoading}
+              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                questionCount === count
+                  ? 'bg-purple-500 text-white'
+                  : gameState !== null || isLoading
+                  ? 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-300 dark:hover:bg-gray-500'
+              }`}
+            >
+              {count}
+            </button>
+          ))}
+        </div>
+        <p className="text-xs text-gray-500 mt-1">
+          Game will end after {questionCount} questions (Current state: {questionCount})
         </p>
       </div>
 
@@ -459,7 +521,7 @@ export default function EnhancedPetGame({ selectedModel, selectedModelName, user
                 onClick={startNewGame}
                 className="bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-4 rounded-lg transition-colors"
               >
-                Next Question
+                {totalQuestions >= questionCount ? 'Start New Game' : 'Next Question'}
               </button>
             )}
           </div>
@@ -531,8 +593,26 @@ export default function EnhancedPetGame({ selectedModel, selectedModelName, user
         </div>
       )}
 
+      {/* Game Progress */}
+      {gameState && (
+        <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-600">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm text-gray-600 dark:text-gray-400">Progress</span>
+            <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
+              {totalQuestions} / {questionCount}
+            </span>
+          </div>
+          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+            <div 
+              className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+              style={{ width: `${Math.min((totalQuestions / questionCount) * 100, 100)}%` }}
+            ></div>
+          </div>
+        </div>
+      )}
+
       {/* Game Stats */}
-      <div className="mt-6 pt-4 border-t border-gray-200">
+      <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-600">
         <div className="grid grid-cols-4 gap-4 text-center text-sm">
           <div>
             <div className="text-gray-600 dark:text-gray-400">Questions</div>

@@ -30,8 +30,8 @@ const nextConfig = {
   experimental: {
     scrollRestoration: true,
   },
-  // Output standalone for better deployment
-  output: 'standalone',
+  // Output standalone for better deployment (commented out for Vercel)
+  // output: 'standalone',
 }
 
 module.exports = nextConfig

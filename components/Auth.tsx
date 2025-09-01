@@ -666,7 +666,7 @@ export default function Auth({ onAuthSuccess, onClose, onShowSnackbar }: AuthPro
         ) : (
           <div className="space-y-2">
             <p className="text-gray-600 dark:text-gray-400">
-              {isLogin ? "Don&apos;t have an account?" : "Already have an account?"}
+              {isLogin ? "Don't have an account?" : "Already have an account?"}
               <button
                 onClick={() => {
                   setIsLogin(!isLogin)
@@ -684,7 +684,7 @@ export default function Auth({ onAuthSuccess, onClose, onShowSnackbar }: AuthPro
             </p>
             {isLogin && (
               <p className="text-gray-600 dark:text-gray-400 text-sm">
-                Didn&apos;t receive confirmation email?
+                Didn't receive confirmation email?
                 <button
                   onClick={() => {
                     setShowResendConfirmation(true)

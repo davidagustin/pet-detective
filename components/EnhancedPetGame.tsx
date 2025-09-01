@@ -308,6 +308,7 @@ export default function EnhancedPetGame({ selectedModel, selectedModelName, user
               height={600}
               className="w-full h-80 object-cover rounded-lg shadow-md"
               priority
+              unoptimized
             />
             {/* Pet Type Indicator */}
             <div className="absolute top-4 left-4 bg-white dark:bg-gray-700 bg-opacity-90 dark:bg-opacity-90 px-3 py-1 rounded-full shadow-md">

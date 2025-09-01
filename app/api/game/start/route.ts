@@ -76,7 +76,8 @@ const breedMaxImages: Record<string, number> = {
 const getCloudinaryUrl = (breed: string, imageNumber: number) => {
   const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'drj3twq19';
   const breedKey = breed.toLowerCase().replace(/\s+/g, '_');
-  return `https://res.cloudinary.com/${cloudName}/image/upload/c_fill,w_800,h_600,q_auto/pet-detective/${breedKey}_${imageNumber}`;
+  // Ensure the URL format matches Cloudinary's expected structure
+  return `https://res.cloudinary.com/${cloudName}/image/upload/c_fill,w_800,h_600,q_auto/pet-detective/${breedKey}_${imageNumber}.jpg`;
 };
 
 // Get animal type for a breed

@@ -1,25 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
 
-// Load real breed data
-const loadBreedData = (): BreedData | null => {
-  try {
-    const breedMappingPath = path.join(process.cwd(), 'api', 'breed_mapping.json');
-    console.log('Loading breed data from:', breedMappingPath);
-    
-    if (!fs.existsSync(breedMappingPath)) {
-      console.error('Breed mapping file does not exist:', breedMappingPath);
-      return null;
-    }
-    
-    const breedData = JSON.parse(fs.readFileSync(breedMappingPath, 'utf8'));
-    console.log('Successfully loaded breed data with', breedData.breed_types.cats.length, 'cats and', breedData.breed_types.dogs.length, 'dogs');
-    return breedData;
-  } catch (error) {
-    console.error('Error loading breed data:', error);
-    return null;
-  }
+// Vercel runtime configuration
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
+// Embedded breed data (removed file system dependency for production compatibility)
+const getBreedData = (): BreedData => {
+  return {
+    breed_types: {
+      cats: [
+        'Abyssinian', 'Bengal', 'Birman', 'Bombay', 'British Shorthair', 
+        'Egyptian Mau', 'Maine Coon', 'Persian', 'Ragdoll', 'Russian Blue', 
+        'Siamese', 'Sphynx'
+      ],
+      dogs: [
+        'American Bulldog', 'American Pit Bull Terrier', 'Basset Hound', 'Beagle', 
+        'Boxer', 'Chihuahua', 'English Cocker Spaniel', 'English Setter', 
+        'German Shorthaired', 'Great Pyrenees', 'Havanese', 'Japanese Chin', 
+        'Keeshond', 'Leonberger', 'Miniature Pinscher', 'Newfoundland', 
+        'Pomeranian', 'Pug', 'Saint Bernard', 'Samoyed', 'Scottish Terrier', 
+        'Shiba Inu', 'Staffordshire Bull Terrier', 'Wheaten Terrier', 'Yorkshire Terrier'
+      ]
+    },
+    filename_to_breed: {}
+  };
 };
 
 // Types
@@ -177,19 +181,8 @@ export async function POST(request: NextRequest) {
     const gameDifficulty: Difficulty = (game_mode || difficulty) as Difficulty;
     const animalFilter: AnimalFilter = animal_filter as AnimalFilter;
 
-    // Load real breed data
-    let breedData = loadBreedData();
-    if (!breedData) {
-      console.error('Failed to load breed data, using fallback');
-      // Fallback breed data
-      breedData = {
-        breed_types: {
-          cats: ['Persian', 'Siamese', 'Maine Coon', 'Ragdoll', 'British Shorthair'],
-          dogs: ['Golden Retriever', 'Labrador Retriever', 'German Shepherd', 'Bulldog', 'Beagle']
-        },
-        filename_to_breed: {}
-      };
-    }
+    // Use embedded breed data (production-compatible)
+    const breedData = getBreedData();
 
     // Filter breeds based on animal_filter preference
     let availableBreeds: string[] = [];

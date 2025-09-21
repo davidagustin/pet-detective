@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 
-// Force runtime to be edge
-export const runtime = 'edge';
+// Vercel runtime configuration
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
   return NextResponse.json({
